@@ -47,21 +47,48 @@ Route::prefix('founders')->name('founders.')->group(function () {
     })->name('test.menu');
 
     // Wallet connection routes
+    Route::get('/wallet/status', function (Illuminate\Http\Request $request) {
+        $walletAddress = session('wallet_address');
+        $treasuryWallet = config('founders.algorand.treasury_address');
+
+        if ($walletAddress && $walletAddress === $treasuryWallet) {
+            return response()->json([
+                'connected' => true,
+                'address' => $walletAddress
+            ]);
+        } else {
+            return response()->json([
+                'connected' => false,
+                'address' => null
+            ]);
+        }
+    })->name('wallet.status');
+
     Route::post('/wallet/connect', function (Illuminate\Http\Request $request) {
         $walletAddress = $request->input('wallet_address');
         $treasuryWallet = config('founders.algorand.treasury_address');
 
         if ($walletAddress === $treasuryWallet) {
             session(['wallet_address' => $walletAddress]);
-            return redirect()->back()->with('success', 'Treasury wallet connesso con successo');
+            return response()->json([
+                'success' => true,
+                'message' => 'Treasury wallet connesso con successo'
+                // Rimuovo redirect_url - sarà gestito dal JavaScript
+            ]);
         } else {
-            return redirect()->back()->with('error', 'Solo il Treasury wallet può accedere al sistema');
+            return response()->json([
+                'success' => false,
+                'error' => 'Solo il Treasury wallet può accedere al sistema'
+            ], 403);
         }
     })->name('wallet.connect');
 
     Route::post('/wallet/disconnect', function (Illuminate\Http\Request $request) {
         $request->session()->forget('wallet_address');
-        return redirect()->back()->with('success', 'Wallet disconnesso');
+        return response()->json([
+            'success' => true,
+            'message' => 'Wallet disconnesso'
+        ]);
     })->name('wallet.disconnect');
 
     // Protected Dashboard Routes (Require wallet authentication)

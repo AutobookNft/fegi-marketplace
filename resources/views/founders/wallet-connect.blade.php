@@ -252,7 +252,8 @@
 
             // Handle wallet connection
             async function handleConnection() {
-                if (!window.FoundersWallet) {
+                // Check if WalletManager is available
+                if (!window.WalletManager) {
                     showError('Sistema wallet non disponibile. Ricarica la pagina.');
                     return;
                 }
@@ -261,14 +262,20 @@
                 connectingDiv.classList.remove('hidden');
 
                 try {
-                    await window.FoundersWallet.connect();
+                    console.log('Avvio connessione wallet...');
+                    await window.WalletManager.connect();
 
-                    if (window.FoundersWallet.isConnected()) {
-                        const address = window.FoundersWallet.getAddress();
-                        updateUI(true, address);
+                    // Check connection status
+                    const state = window.WalletManager.debug.getCurrentState();
+                    console.log('Stato dopo connessione:', state);
+
+                    if (state.currentWalletAddress) {
+                        updateUI(true, state.currentWalletAddress);
+                    } else {
+                        throw new Error('Connessione fallita - nessun indirizzo ricevuto');
                     }
                 } catch (error) {
-                    console.error('Connection error:', error);
+                    console.error('Errore connessione:', error);
                     showError(error.message || 'Errore durante la connessione del wallet');
                     connectBtn.classList.remove('hidden');
                     connectingDiv.classList.add('hidden');
@@ -298,29 +305,39 @@
                 window.location.href = dashboardUrl;
             });
 
-
-
             // Check initial wallet status
-            function checkInitialStatus() {
-                // Wait for FoundersWallet to be available
-                if (window.FoundersWallet) {
-                    if (window.FoundersWallet.isConnected()) {
-                        const address = window.FoundersWallet.getAddress();
-                        updateUI(true, address);
-                    } else {
-                        updateUI(false);
+            async function checkInitialStatus() {
+                console.log('Controllo stato iniziale wallet...');
+
+                // Wait for WalletManager to be available
+                if (window.WalletManager) {
+                    try {
+                        const hasSession = await window.WalletManager.checkSession();
+                        console.log('Sessione esistente:', hasSession);
+
+                        if (hasSession) {
+                            const state = window.WalletManager.debug.getCurrentState();
+                            if (state.currentWalletAddress) {
+                                updateUI(true, state.currentWalletAddress);
+                                return;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Errore controllo sessione:', error);
                     }
+                }
+
+                // Fallback: Check Laravel session variables
+                if (window.WALLET_SESSION_ACTIVE && window.WALLET_SESSION_ADDRESS) {
+                    console.log('Trovata sessione Laravel:', window.WALLET_SESSION_ADDRESS);
+                    updateUI(true, window.WALLET_SESSION_ADDRESS);
                 } else {
-                    // Check if Laravel session is active
-                    if (window.WALLET_SESSION_ACTIVE && window.WALLET_SESSION_ADDRESS) {
-                        updateUI(true, window.WALLET_SESSION_ADDRESS);
-                    } else {
-                        updateUI(false);
-                    }
+                    console.log('Nessuna sessione trovata');
+                    updateUI(false);
                 }
             }
 
-            // Wait a bit for the FoundersWallet to initialize, then check status
+            // Wait a bit for the WalletManager to initialize, then check status
             setTimeout(checkInitialStatus, 1000);
         });
     </script>
