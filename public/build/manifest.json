@@ -1,0 +1,25 @@
+{
+  "node_modules/@perawallet/connect/dist/App-428f5096.js": {
+    "file": "assets/App-428f5096-Wtwm5n9-.js",
+    "name": "App-428f5096",
+    "src": "node_modules/@perawallet/connect/dist/App-428f5096.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-BrZaCRyL.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-Ervs7u1q.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/@perawallet/connect/dist/App-428f5096.js"
+    ]
+  }
+}

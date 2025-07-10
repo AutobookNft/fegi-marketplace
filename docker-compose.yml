@@ -1,0 +1,109 @@
+services:
+    nginx:
+        image: nginx:latest
+        container_name: nginx-proxy
+        ports:
+            - "8090:80" # HTTP
+            - "8443:443" # HTTPS
+        volumes:
+            - ./nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./.cert/localhost.pem:/etc/nginx/certs/localhost.crt:ro
+            - ./.cert/localhost-key.pem:/etc/nginx/certs/localhost.key:ro
+        depends_on:
+            - laravel.test
+        networks:
+            - sail
+    laravel.test:
+        build:
+            context: "./vendor/laravel/sail/runtimes/8.4"
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: "${WWWGROUP}"
+        image: "sail-8.4/app"
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        ports:
+            - "9000:80" # Espone solo internamente per Nginx
+            - "${VITE_PORT:-5190}:${VITE_PORT:-5190}"
+        environment:
+            WWWUSER: "${WWWUSER}"
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: "${SAIL_XDEBUG_MODE:-off}"
+            XDEBUG_CONFIG: "${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}"
+            IGNITION_LOCAL_SITES_PATH: "${PWD}"
+            ALGOKIT_MICROSERVICE_URL: "${ALGOKIT_MICROSERVICE_URL:-http://algokit-service:3000}"
+        volumes:
+            - ".:/var/www/html"
+        networks:
+            - sail
+        depends_on:
+            - mysql
+
+    mysql:
+        image: "mysql/mysql-server:8.0"
+        ports:
+            - "${FORWARD_DB_PORT:-3390}:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+            MYSQL_ROOT_HOST: "%"
+            MYSQL_DATABASE: "${DB_DATABASE}"
+            MYSQL_USER: "${DB_USERNAME}"
+            MYSQL_PASSWORD: "${DB_PASSWORD}"
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        volumes:
+            - "sail-mysql:/var/lib/mysql"
+            - "./vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh"
+        networks:
+            - sail
+        healthcheck:
+            test:
+                - CMD
+                - mysqladmin
+                - ping
+                - "-p${DB_PASSWORD}"
+            retries: 3
+            timeout: 5s
+
+    # algokit-service:
+    #     build:
+    #         context: './docker/algokit'
+    #         dockerfile: Dockerfile
+    #     image: 'florenceegi/algokit-service:latest'
+    #     container_name: 'florenceegi-algokit'
+    #     restart: unless-stopped
+    #     ports:
+    #         - '${ALGOKIT_PORT:-3090}:3000'
+    #     environment:
+    #         NODE_ENV: '${NODE_ENV:-development}'
+    #         PORT: 3000
+    #         LARAVEL_URL: 'http://laravel.test:80'
+    #         CORS_ORIGINS: 'http://laravel.test:80,http://localhost:8090,http://127.0.0.1:8090'
+    #         ALGORAND_NETWORK: '${ALGORAND_NETWORK:-testnet}'
+    #         ALGOD_SERVER: '${ALGOD_SERVER:-https://testnet-api.algonode.cloud}'
+    #         ALGOD_PORT: '${ALGOD_PORT:-443}'
+    #         ALGOD_TOKEN: '${ALGOD_TOKEN:-}'
+    #         INDEXER_SERVER: '${INDEXER_SERVER:-https://testnet-idx.algonode.cloud}'
+    #         INDEXER_PORT: '${INDEXER_PORT:-443}'
+    #         INDEXER_TOKEN: '${INDEXER_TOKEN:-}'
+    #         TREASURY_MNEMONIC: '${TREASURY_MNEMONIC}'
+    #         LOG_LEVEL: '${ALGOKIT_LOG_LEVEL:-info}'
+    #         DEBUG_ALGORAND: '${ALGOKIT_DEBUG:-false}'
+    #     volumes:
+    #         - './storage/algokit:/app/storage'
+    #         - './storage/logs/algokit:/app/logs'
+    #     networks:
+    #         - sail
+    #     healthcheck:
+    #         test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    #         interval: 30s
+    #         timeout: 10s
+    #         retries: 3
+    #         start_period: 40s
+
+networks:
+    sail:
+        driver: bridge
+
+volumes:
+    sail-mysql:
+        driver: local

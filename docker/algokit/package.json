@@ -1,0 +1,25 @@
+{
+  "name": "florenceegi-algokit-microservice",
+  "version": "1.0.0",
+  "description": "FlorenceEGI AlgoKit Microservice for Algorand blockchain operations",
+  "main": "microservice-server.js",
+  "scripts": {
+    "start": "node microservice-server.js",
+    "dev": "nodemon microservice-server.js",
+    "health": "curl -f http://localhost:3000/health"
+  },
+  "dependencies": {
+    "algosdk": "^3.0.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Padmin D. Curtis (AI Partner OS3.0) for Fabio Cherici",
+  "license": "MIT"
+}

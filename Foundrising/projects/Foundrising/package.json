@@ -1,0 +1,51 @@
+{
+  "name": "smart_contracts",
+  "version": "1.0.0",
+  "description": "Smart contract deployer",
+  "main": "smart_contracts/index.ts",
+  "scripts": {
+    "build": "algokit compile ts smart_contracts --output-source-map --out-dir artifacts && algokit generate client smart_contracts/artifacts --output {app_spec_dir}/{contract_name}Client.ts",
+    "deploy": "ts-node-dev --transpile-only --watch .env -r dotenv/config smart_contracts/index.ts",
+    "deploy:ci": "ts-node --transpile-only -r dotenv/config smart_contracts/index.ts",
+    "check-types": "tsc --noEmit",
+    "server": "ts-node-dev --transpile-only src/server.ts",
+    "server:dev": "ts-node-dev --transpile-only --watch src/server.ts",
+    "server:js": "node src/server.js",
+    "server:js:dev": "nodemon src/server.js",
+    "server:laravel": "node src/server-laravel.js",
+    "server:laravel:dev": "nodemon src/server-laravel.js",
+    "server:build": "tsc src/server.ts --outDir dist --target es2020 --module commonjs",
+    "server:start": "node dist/server.js"
+  },
+  "engines": {
+    "node": ">=22.0",
+    "npm": ">=9.0"
+  },
+  "dependencies": {
+    "@algorandfoundation/algorand-typescript": "~1.0.0-beta.25 <1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "helmet": "^7.2.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "@algorandfoundation/algokit-client-generator": "^5.0.0",
+    "@algorandfoundation/algokit-utils": "^9.0.0",
+    "@algorandfoundation/algokit-utils-debug": "^1.0.4",
+    "@algorandfoundation/puya-ts": "~1.0.0-beta.50 <1.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@tsconfig/node22": "^22.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/helmet": "^4.0.0",
+    "@types/morgan": "^1.9.9",
+    "algosdk": "^3.0.0",
+    "dotenv": "^16.4.7",
+    "nodemon": "^3.1.10",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "esbuild": "0.25.0"
+  }
+}
