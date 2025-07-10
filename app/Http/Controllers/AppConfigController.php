@@ -19,9 +19,21 @@ class AppConfigController extends Controller
     public function getFoundersTranslations(): array
     {
         return [
+            // Traduzioni per i contesti
+            'menu.founders' => 'Sistema Founders',
+            
+            // Traduzioni per i gruppi di menu
             'menu.founders_system' => 'Sistema Padri Fondatori',
-            'menu.founders.certificate_issue' => 'Emissione Certificati',
+            'menu.founders.certificates' => 'Gestione Certificati',
+            'menu.founders.treasury' => 'Treasury Management',
+            'menu.founders.shipping' => 'Gestione Spedizioni',
+            'menu.founders.collections' => 'Gestione Collezioni',
+
+            // Traduzioni per i menu item
+            'menu.founders.certificate_issue' => 'Lista Certificati',
+            'menu.founders.certificate_create' => 'Emetti Certificato',
             'menu.founders.treasury_status' => 'Status Treasury',
+            'menu.founders.shipping_management' => 'Tracking Spedizioni',
             'menu.founders.collection_management' => 'Gestione Collection',
 
             // Traduzioni per i form

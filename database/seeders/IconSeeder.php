@@ -29,4 +29,3 @@ class IconSeeder extends Seeder
         }
     }
 }
-

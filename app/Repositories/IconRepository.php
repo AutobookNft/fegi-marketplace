@@ -155,9 +155,9 @@ class IconRepository
     private function getUserIconStyle(): string
     {
 
-        $user = FegiAuth::user();
+        $user = Auth::user();
 
-        if (FegiAuth::check()) {
+        if (Auth::check()) {
             $userStyle = $user->icon_style;
             if ($userStyle) {
                 return $userStyle;

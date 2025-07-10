@@ -14,8 +14,8 @@ class TreasuryStatusMenu extends MenuItem
     public function __construct()
     {
         parent::__construct(
-            translationKey: 'menu.founders.treasury_status',
-            route: 'founders.treasury.status',
+            translationKey: 'menu.treasury_status',
+            route: 'founders.treasury.index',
             icon: 'wallet',
             permission: null,
             children: null,

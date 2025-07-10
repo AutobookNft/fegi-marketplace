@@ -26,6 +26,16 @@ return [
     'currency' => env('FOUNDERS_CURRENCY', 'EUR'),
 
     // ========================================
+    // APPLICATION CONFIGURATION
+    // ========================================
+
+    'app' => [
+        'https_port' => env('APP_PORT', 8443),
+        'base_url' => env('APP_URL', 'https://localhost:8443'),
+        'force_https' => env('APP_FORCE_HTTPS', true),
+    ],
+
+    // ========================================
     // ALGOKIT MICROSERVICE CONFIGURATION
     // ========================================
 

@@ -5,18 +5,18 @@ namespace App\Services\Menu\Items;
 use App\Services\Menu\MenuItem;
 
 /**
- * Menu item per l'emissione dei certificati Padre Fondatore
+ * Menu item per l'emissione di nuovi certificati
  *
  * @package App\Services\Menu\Items
  */
-class CertificateIssueMenu extends MenuItem
+class CertificateCreateMenu extends MenuItem
 {
     public function __construct()
     {
         parent::__construct(
-            translationKey: 'menu.certificate_issue',
-            route: 'founders.certificates.index',
-            icon: 'certificate',
+            translationKey: 'menu.certificate_create',
+            route: 'founders.certificates.create',
+            icon: 'plus-circle',
             permission: null,
             children: null,
             modalAction: null,

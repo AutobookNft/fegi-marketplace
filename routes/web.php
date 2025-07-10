@@ -46,6 +46,11 @@ Route::prefix('founders')->name('founders.')->group(function () {
         return view('founders.test-menu');
     })->name('test.menu');
 
+    // Test Sidebar (Public - for testing sidebar)
+    Route::get('/test-sidebar', function () {
+        return view('founders.test-sidebar');
+    })->name('test.sidebar');
+
     // Wallet connection routes
     Route::get('/wallet/status', function (Illuminate\Http\Request $request) {
         $walletAddress = session('wallet_address');

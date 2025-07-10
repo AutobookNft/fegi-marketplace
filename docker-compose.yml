@@ -23,7 +23,7 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         ports:
-            - "9000:80" # Espone solo internamente per Nginx
+            - "9000:80"
             - "${VITE_PORT:-5190}:${VITE_PORT:-5190}"
         environment:
             WWWUSER: "${WWWUSER}"
@@ -38,7 +38,6 @@ services:
             - sail
         depends_on:
             - mysql
-
     mysql:
         image: "mysql/mysql-server:8.0"
         ports:
@@ -63,43 +62,13 @@ services:
                 - "-p${DB_PASSWORD}"
             retries: 3
             timeout: 5s
-
-    # algokit-service:
-    #     build:
-    #         context: './docker/algokit'
-    #         dockerfile: Dockerfile
-    #     image: 'florenceegi/algokit-service:latest'
-    #     container_name: 'florenceegi-algokit'
-    #     restart: unless-stopped
-    #     ports:
-    #         - '${ALGOKIT_PORT:-3090}:3000'
-    #     environment:
-    #         NODE_ENV: '${NODE_ENV:-development}'
-    #         PORT: 3000
-    #         LARAVEL_URL: 'http://laravel.test:80'
-    #         CORS_ORIGINS: 'http://laravel.test:80,http://localhost:8090,http://127.0.0.1:8090'
-    #         ALGORAND_NETWORK: '${ALGORAND_NETWORK:-testnet}'
-    #         ALGOD_SERVER: '${ALGOD_SERVER:-https://testnet-api.algonode.cloud}'
-    #         ALGOD_PORT: '${ALGOD_PORT:-443}'
-    #         ALGOD_TOKEN: '${ALGOD_TOKEN:-}'
-    #         INDEXER_SERVER: '${INDEXER_SERVER:-https://testnet-idx.algonode.cloud}'
-    #         INDEXER_PORT: '${INDEXER_PORT:-443}'
-    #         INDEXER_TOKEN: '${INDEXER_TOKEN:-}'
-    #         TREASURY_MNEMONIC: '${TREASURY_MNEMONIC}'
-    #         LOG_LEVEL: '${ALGOKIT_LOG_LEVEL:-info}'
-    #         DEBUG_ALGORAND: '${ALGOKIT_DEBUG:-false}'
-    #     volumes:
-    #         - './storage/algokit:/app/storage'
-    #         - './storage/logs/algokit:/app/logs'
-    #     networks:
-    #         - sail
-    #     healthcheck:
-    #         test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-    #         interval: 30s
-    #         timeout: 10s
-    #         retries: 3
-    #         start_period: 40s
-
+    redis:
+        image: redis:alpine
+        container_name: redis
+        ports:
+        - "6379:6379"
+        networks:
+        - sail
 networks:
     sail:
         driver: bridge

@@ -32,8 +32,12 @@ class Sidebar extends Component
      */
     public function mount()
     {
+
         $evaluator = new MenuConditionEvaluator();
+
         $this->iconRepo = app(\App\Repositories\IconRepository::class);
+        Log::channel('foundrising')->debug('Sidebar component mounted', ['iconRepo' => $this->iconRepo]);
+
 
         // Determina il contesto dalla rotta corrente
         $currentRouteName = Route::currentRouteName();
@@ -44,10 +48,11 @@ class Sidebar extends Component
 
         // Ottieni i menu per il contesto corrente
         $allMenus = ContextMenus::getMenusForContext($context);
-        Log::channel('upload')->debug('Sidebar component mounted: $allMenus initialized', ['menus' => $allMenus]);
+
 
         // Filtra i menu in base ai permessi dell'utente
         foreach ($allMenus as $menu) {
+
             $filteredItems = array_filter($menu->items, function ($item) use ($evaluator) {
                 return $evaluator->shouldDisplay($item);
             });
@@ -62,6 +67,7 @@ class Sidebar extends Component
                 ];
 
                 foreach ($filteredItems as $item) {
+
                     $menuItemArray = [
                         'name' => $item->name,
                         'route' => $item->route,
@@ -77,18 +83,22 @@ class Sidebar extends Component
 
                     $menuArray['items'][] = $menuItemArray;
 
-                    Log::channel('upload')->debug('Menu item processed', [
-                        'name' => $item->name,
-                        'permission' => $item->permission,
-                        'is_modal' => $menuItemArray['is_modal_action'],
-                        'modal_action' => $menuItemArray['modal_action']
-                    ]);
                 }
+
+                Log::channel('foundrising')->debug('Menu item processed', [
+                    'name' => $item->name,
+                    'permission' => $item->permission,
+                    'is_modal' => $menuItemArray['is_modal_action'],
+                    'modal_action' => $menuItemArray['modal_action']
+                ]);
 
                 $this->menus[] = $menuArray;
             }
         }
+
     }
+
+
 
     /**
      * Render the sidebar component

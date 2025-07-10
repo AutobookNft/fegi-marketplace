@@ -18,13 +18,13 @@ SOURCE_DIR="$(pwd)"
 
 # Percorsi delle cartelle di backup
 backup_base_dir="/mnt/c/wsl_backup"
-backup_dest_c="${backup_base_dir}/${TIMESTAMP}"
+backup_dest_c="${backup_base_dir}/${TIMESTAMP}/Fegi_marketplace"
 LOG_FILE="../backup_log/logfile.log"  # Relativo alla directory del progetto
 
 # Percorsi delle cartelle di backup aggiuntive
-drive_d="/mnt/d/Il\ mio\ Drive/Fegi_Marketplace_backup/${TIMESTAMP}"
-drive_e="/mnt/e/Fegi_Marketplace_backup/${TIMESTAMP}"
-drive_h="/mnt/h/Fegi_Marketplace_backup/${TIMESTAMP}"
+drive_d="/mnt/d/Il\ mio\ Drive/Fegi_Marketplace_backup/${TIMESTAMP}/Fegi_marketplace"
+drive_e="/mnt/e/Fegi_Marketplace_backup/${TIMESTAMP}/Fegi_marketplace"
+drive_h="/mnt/h/Fegi_Marketplace_backup/${TIMESTAMP}/Fegi_marketplace"
 
 BACKUP_NAME="${PROJECT_NAME}_backup_${TIMESTAMP}"
 
@@ -164,7 +164,7 @@ if rsync -av $RSYNC_EXCLUDES "$SOURCE_DIR/" "$backup_dest_c/"; then
                 # Drive D
         if check_drive "$drive_d" "D"; then
             echo -e "${YELLOW}📁 Copiando su Drive D...${NC}"
-            mkdir -p "$(dirname "$drive_d")"
+            mkdir -p "$drive_d"
             if rsync -av "$backup_dest_c/" "$drive_d/"; then
                 echo -e "${GREEN}✅ Backup copiato su Drive D${NC}"
                 echo "$(date): Backup copiato su Drive D - $drive_d" >> "$LOG_FILE"
@@ -177,7 +177,7 @@ if rsync -av $RSYNC_EXCLUDES "$SOURCE_DIR/" "$backup_dest_c/"; then
         # Drive E
         if check_drive "$drive_e" "E"; then
             echo -e "${YELLOW}📁 Copiando su Drive E...${NC}"
-            mkdir -p "$(dirname "$drive_e")"
+            mkdir -p "$drive_e"
             if rsync -av "$backup_dest_c/" "$drive_e/"; then
                 echo -e "${GREEN}✅ Backup copiato su Drive E${NC}"
                 echo "$(date): Backup copiato su Drive E - $drive_e" >> "$LOG_FILE"
@@ -190,7 +190,7 @@ if rsync -av $RSYNC_EXCLUDES "$SOURCE_DIR/" "$backup_dest_c/"; then
         # Drive H
         if check_drive "$drive_h" "H"; then
             echo -e "${YELLOW}📁 Copiando su Drive H...${NC}"
-            mkdir -p "$(dirname "$drive_h")"
+            mkdir -p "$drive_h"
             if rsync -av "$backup_dest_c/" "$drive_h/"; then
                 echo -e "${GREEN}✅ Backup copiato su Drive H${NC}"
                 echo "$(date): Backup copiato su Drive H - $drive_h" >> "$LOG_FILE"
