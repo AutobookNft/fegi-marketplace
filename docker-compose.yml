@@ -25,6 +25,8 @@ services:
         ports:
             - "9000:80"
             - "${VITE_PORT:-5190}:${VITE_PORT:-5190}"
+        env_file:
+            - .env
         environment:
             WWWUSER: "${WWWUSER}"
             LARAVEL_SAIL: 1
@@ -32,6 +34,14 @@ services:
             XDEBUG_CONFIG: "${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}"
             IGNITION_LOCAL_SITES_PATH: "${PWD}"
             ALGOKIT_MICROSERVICE_URL: "${ALGOKIT_MICROSERVICE_URL:-http://algokit-service:3000}"
+            CACHE_DRIVER: "${CACHE_DRIVER:-redis}"
+            CACHE_STORE: "${CACHE_STORE:-redis}"
+            REDIS_CLIENT: "${REDIS_CLIENT:-phpredis}"
+            REDIS_HOST: "${REDIS_HOST:-redis}"
+            REDIS_PASSWORD: "${REDIS_PASSWORD:-null}"
+            REDIS_PORT: "${REDIS_PORT:-6379}"
+            REDIS_CACHE_CONNECTION: "${REDIS_CACHE_CONNECTION:-default}"
+            REDIS_CACHE_LOCK_CONNECTION: "${REDIS_CACHE_LOCK_CONNECTION:-default}"
         volumes:
             - ".:/var/www/html"
         networks:

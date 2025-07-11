@@ -22,6 +22,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 RUN pip install pipx
 RUN pipx ensurepath
 
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
 # Configura PATH per pipx
 ENV PATH="/root/.local/bin:$PATH"
 
