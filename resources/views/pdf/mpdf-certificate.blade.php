@@ -465,6 +465,36 @@
                         <td>Valore Nominale:</td>
                         <td>€{{ number_format($certificate->base_price ?? 250, 2, ',', '.') }}</td>
                     </tr>
+                    @if($certificate->asa_id)
+                    <tr>
+                        <td><strong>🪙 Token ASA ID:</strong></td>
+                        <td style="font-family: monospace; color: #0066cc; font-weight: bold;">{{ $certificate->asa_id }}</td>
+                    </tr>
+                    @endif
+                    @if($certificate->tx_id)
+                    <tr>
+                        <td><strong>🔗 Transaction ID:</strong></td>
+                        <td style="font-family: monospace; color: #0066cc; font-weight: bold; font-size: 10px;">{{ $certificate->tx_id }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td><strong>💰 Wallet Destinazione:</strong></td>
+                        <td style="font-family: monospace; color: #cc6600; font-weight: bold; font-size: 11px;">
+                            @if($certificate->investor_wallet)
+                                {{ substr($certificate->investor_wallet, 0, 20) }}...
+                                <br><small style="color: #666;">(Wallet Investitore)</small>
+                            @else
+                                Treasury Wallet
+                                <br><small style="color: #666;">(In attesa di trasferimento)</small>
+                            @endif
+                        </td>
+                    </tr>
+                    @if($certificate->minted_at)
+                    <tr>
+                        <td><strong>⏰ Data Minting:</strong></td>
+                        <td>{{ $certificate->minted_at->format('d F Y H:i') }}</td>
+                    </tr>
+                    @endif
                 </table>
             </div>
 

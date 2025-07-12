@@ -296,4 +296,69 @@ class CertificateController extends Controller
 
         return response()->json($stats);
     }
+
+    /**
+     * Show public certificate with security hash verification.
+     */
+    public function showPublic($id, $hash)
+    {
+        $certificate = FounderCertificate::with(['collection.certificateBenefits'])->findOrFail($id);
+
+        // Verify security hash
+        if (!$this->verifyPublicHash($certificate, $hash)) {
+            abort(404, 'Certificato non trovato o link non valido.');
+        }
+
+        return view('certificates.public', compact('certificate'));
+    }
+
+    /**
+     * Generate public URL for certificate.
+     */
+    public function getPublicUrl(FounderCertificate $certificate)
+    {
+        $hash = $this->generatePublicHash($certificate);
+
+        return route('certificate.public', [
+            'id' => $certificate->id,
+            'hash' => $hash
+        ]);
+    }
+
+    /**
+     * Generate secure hash for public certificate access.
+     */
+    private function generatePublicHash(FounderCertificate $certificate)
+    {
+        $data = [
+            'id' => $certificate->id,
+            'investor_name' => $certificate->investor_name,
+            'created_at' => $certificate->created_at?->timestamp,
+            'collection_id' => $certificate->collection_id,
+        ];
+
+        return substr(hash('sha256', json_encode($data) . config('app.key')), 0, 16);
+    }
+
+    /**
+     * Verify public certificate hash.
+     */
+    private function verifyPublicHash(FounderCertificate $certificate, string $hash)
+    {
+        return hash_equals($this->generatePublicHash($certificate), $hash);
+    }
+
+    /**
+     * Get public URL for certificate via AJAX.
+     */
+    public function getPublicUrlAjax(FounderCertificate $certificate)
+    {
+        $url = $this->getPublicUrl($certificate);
+
+        return response()->json([
+            'url' => $url,
+            'certificate_id' => $certificate->id,
+            'investor_name' => $certificate->investor_name,
+        ]);
+    }
 }

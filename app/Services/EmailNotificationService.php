@@ -83,8 +83,8 @@ class EmailNotificationService
             // Prepare email content with FlorenceEGI branding
             $emailData = $this->prepareEmailData($certificateData);
 
-            // Get PDF content for attachment
-            $pdfContent = $this->pdfService->getCertificatePdf($pdfPath);
+            // Get PDF content for attachment from storage
+            $pdfContent = \Illuminate\Support\Facades\Storage::disk('public')->get($pdfPath);
 
             // Send email with attachment
             $deliveryResult = $this->sendCertificateEmail($emailData, $pdfContent, $certificateData['index']);
@@ -97,7 +97,6 @@ class EmailNotificationService
             ]);
 
             return $deliveryResult;
-
         } catch (\Exception $e) {
             $this->logger->error('Certificate email delivery failed', [
                 'type' => 'EMAIL_DELIVERY_FAILED',
@@ -153,7 +152,6 @@ class EmailNotificationService
             ]);
 
             return $result;
-
         } catch (\Exception $e) {
             $this->logger->error('Test email failed', [
                 'type' => 'EMAIL_TEST_FAILED',
@@ -193,7 +191,6 @@ class EmailNotificationService
             ]);
 
             return $html;
-
         } catch (\Exception $e) {
             $this->logger->error('Email template preview failed', [
                 'type' => 'EMAIL_PREVIEW_FAILED',
@@ -256,9 +253,10 @@ class EmailNotificationService
             'recipient_email' => $certificateData['investor_email'],
 
             // Email configuration
-            // 'subject' => str_replace('{index}', $certificateData['index'], $this->config['subject']),
-            // 'greeting' => $this->config['greeting'],
-            // 'signature' => $this->config['signature'],
+            'subject' => 'Certificato Padre Fondatore #' . str_pad($certificateData['index'], 2, '0', STR_PAD_LEFT) . ' - FlorenceEGI',
+            'greeting' => 'Caro ' . $certificateData['investor_name'],
+            'signature' => 'Il Team FlorenceEGI',
+            'reply_to' => $this->config['from_email'],
 
             // Certificate details
             'certificate_number' => str_pad($certificateData['index'], 2, '0', STR_PAD_LEFT),
@@ -317,18 +315,18 @@ class EmailNotificationService
      */
     private function sendCertificateEmail(array $emailData, string $pdfContent, int $certificateIndex): array
     {
-        $attachmentName = str_replace('{index}', str_pad($certificateIndex, 2, '0', STR_PAD_LEFT), $this->config['attachment_name']);
+        $attachmentName = str_replace('{index}', str_pad($certificateIndex, 2, '0', STR_PAD_LEFT), $this->config['attachments_name']['certificate']);
 
         try {
             // Send email using Laravel Mail system
             Mail::send($this->config['template'], $emailData, function ($message) use ($emailData, $pdfContent, $attachmentName) {
                 $message->to($emailData['recipient_email'], $emailData['recipient_name'])
-                       ->from($this->config['from_email'], $this->config['from_name'])
-                       ->replyTo($this->config['reply_to'])
-                       ->subject($emailData['subject']);
+                    ->from($this->config['from_email'], $this->config['from_name'])
+                    ->replyTo($emailData['reply_to'])
+                    ->subject($emailData['subject']);
 
                 // Attach PDF certificate
-                if ($this->config['attach_certificate']) {
+                if ($this->config['enabled'] ?? true) {
                     $message->attachData($pdfContent, $attachmentName, [
                         'mime' => 'application/pdf'
                     ]);
@@ -342,7 +340,6 @@ class EmailNotificationService
                 'attachment_name' => $attachmentName,
                 'attachment_size' => strlen($pdfContent)
             ];
-
         } catch (\Exception $e) {
             throw new \Exception("Email delivery failed: " . $e->getMessage());
         }
@@ -357,9 +354,9 @@ class EmailNotificationService
         try {
             Mail::send($this->config['template'], $emailData, function ($message) use ($emailData) {
                 $message->to($emailData['recipient_email'])
-                       ->from($this->config['from_email'], $this->config['from_name'])
-                       ->replyTo($this->config['reply_to'])
-                       ->subject($emailData['subject']);
+                    ->from($this->config['from_email'], $this->config['from_name'])
+                    ->replyTo($emailData['reply_to'])
+                    ->subject($emailData['subject']);
             });
 
             return [
@@ -368,7 +365,6 @@ class EmailNotificationService
                 'timestamp' => now()->toIso8601String(),
                 'is_test' => true
             ];
-
         } catch (\Exception $e) {
             throw new \Exception("Test email delivery failed: " . $e->getMessage());
         }
@@ -429,9 +425,9 @@ class EmailNotificationService
         return [
             'from_email' => $this->config['from_email'],
             'from_name' => $this->config['from_name'],
-            'reply_to' => $this->config['reply_to'],
+            'reply_to' => $this->config['from_email'],
             'template' => $this->config['template'],
-            'attach_certificate' => $this->config['attach_certificate'],
+            'enabled' => $this->config['enabled'] ?? true,
             'mail_driver' => config('mail.default'),
             'mail_host' => config('mail.mailers.smtp.host'),
             'mail_port' => config('mail.mailers.smtp.port'),

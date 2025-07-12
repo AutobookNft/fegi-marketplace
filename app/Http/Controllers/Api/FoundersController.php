@@ -458,7 +458,7 @@ class FoundersController extends Controller
             'investor_wallet' => $certificate->investor_wallet,
             'asa_id' => $certificate->asa_id,
             'tx_id' => $certificate->tx_id,
-            'issued_at' => $certificate->issued_at->toISOString(),
+            'issued_at' => $certificate->issued_at ? $certificate->issued_at->toISOString() : now()->toISOString(),
             'token_transferred' => $certificate->token_transferred
         ];
 

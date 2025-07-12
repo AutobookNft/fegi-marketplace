@@ -122,6 +122,9 @@ Route::prefix('founders')->name('founders.')->group(function () {
         Route::get('/certificates/{certificate}/pdf', [App\Http\Controllers\CertificateController::class, 'generatePdf'])->name('certificates.generate-pdf');
         Route::get('/certificates/{certificate}/pdf/stream', [App\Http\Controllers\CertificateController::class, 'streamPdf'])->name('certificates.stream-pdf');
 
+        // Public URL generation
+        Route::get('/certificates/{certificate}/public-url', [App\Http\Controllers\CertificateController::class, 'getPublicUrlAjax'])->name('certificates.public-url');
+
         // Test PDF route (mock certificate)
         Route::get('/test-pdf', function () {
             // Crea un certificato mock per testare il template PDF
@@ -268,3 +271,35 @@ Route::get('/test-mpdf', function () {
     $pdfService = new App\Services\PDFCertificateService();
     return $pdfService->streamCertificatePDF($certificate);
 })->name('test.mpdf');
+
+// ========================================
+// PUBLIC CERTIFICATE ROUTES
+// ========================================
+
+// Route pubblico per visualizzare il certificato (con hash per sicurezza)
+Route::get('/certificate/{id}/{hash}', [App\Http\Controllers\CertificateController::class, 'showPublic'])
+    ->name('certificate.public');
+
+// Route di test per generare link pubblico
+Route::get('/test-public-certificate/{id?}', function ($id = null) {
+    $certificate = App\Models\FounderCertificate::with(['collection.certificateBenefits'])
+        ->when($id, function ($query, $id) {
+            return $query->where('id', $id);
+        })
+        ->first();
+
+    if (!$certificate) {
+        return response()->json(['error' => 'Certificato non trovato'], 404);
+    }
+
+    $controller = new App\Http\Controllers\CertificateController();
+    $publicUrl = $controller->getPublicUrl($certificate);
+
+    return response()->json([
+        'certificate_id' => $certificate->id,
+        'investor_name' => $certificate->investor_name,
+        'public_url' => $publicUrl,
+        'direct_link_https' => str_replace('http://localhost:8000', 'https://localhost:8443', $publicUrl),
+        'click_to_view' => '<a href="' . str_replace('http://localhost:8000', 'https://localhost:8443', $publicUrl) . '" target="_blank">🌐 Visualizza Certificato HTTPS</a>'
+    ], 200, [], JSON_PRETTY_PRINT);
+})->name('test.public-certificate');

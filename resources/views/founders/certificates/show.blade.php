@@ -262,8 +262,19 @@
                                 </button>
                             @endif
 
-                            {{-- PDF Actions --}}
+                            {{-- Certificate Actions --}}
                             <div class="space-y-2">
+                                <button type="button" onclick="generatePublicLink()"
+                                    class="flex w-full items-center justify-center rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white transition-colors hover:from-green-700 hover:to-emerald-700">
+                                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1">
+                                        </path>
+                                    </svg>
+                                    🌐 Genera Link Pubblico
+                                </button>
+
                                 <a href="{{ route('founders.certificates.generate-pdf', $certificate) }}"
                                     class="flex w-full items-center justify-center rounded-md bg-amber-600 px-4 py-3 text-white transition-colors hover:bg-amber-700">
                                     <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor"
@@ -457,7 +468,7 @@
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
                             maxlength="58">
                         <p class="mt-1 text-xs text-gray-500">L'indirizzo Algorand deve contenere esattamente 58
-                            caratteri (lettere A-Z e numeri 2-7)</p>
+                            caratteri Base32 (A-Z, 2-7). Il server verificherà anche il checksum.</p>
                     </div>
 
                     <div class="mt-4 space-y-2">
@@ -831,7 +842,9 @@
             }
 
             if (!isValidAlgorandAddress(walletAddress)) {
-                alert('Indirizzo wallet non valido. Deve essere di 58 caratteri e iniziare con una lettera maiuscola.');
+                alert(
+                    'Indirizzo wallet non valido. Deve essere di 58 caratteri e contenere solo caratteri Base32 (A-Z, 2-7).'
+                    );
                 return;
             }
 
@@ -879,16 +892,27 @@
         // Utility functions
         function isValidAlgorandAddress(address) {
             // Algorand address validation: 58 characters, Base32 encoding (A-Z, 2-7)
-            // Può iniziare con qualsiasi carattere Base32, non solo lettere maiuscole
+            // NOTA: Questa validazione controlla solo formato, il server farà anche checksum
             console.log('Validating address:', address);
             console.log('Address length:', address.length);
+
+            // Controllo preliminare di formato
+            if (!address || typeof address !== 'string') {
+                console.log('Invalid input: not a string');
+                return false;
+            }
+
+            if (address.length !== 58) {
+                console.log('Invalid length:', address.length);
+                return false;
+            }
 
             const regex = /^[A-Z2-7]{58}$/;
             const isValid = regex.test(address);
 
-            console.log('Is valid:', isValid);
+            console.log('Format validation result:', isValid);
             if (!isValid) {
-                console.log('Failed validation - check characters and length');
+                console.log('Failed format validation - check characters');
                 // Mostra caratteri non validi
                 const invalidChars = address.split('').filter(char => !/[A-Z2-7]/.test(char));
                 if (invalidChars.length > 0) {
@@ -913,6 +937,128 @@
             meta.name = 'csrf-token';
             meta.content = '{{ csrf_token() }}';
             document.head.appendChild(meta);
+        }
+
+        // Generate Public Link
+        function generatePublicLink() {
+            const certificateId = {{ $certificate->id }};
+            const investorName = '{{ $certificate->investor_name ?? 'Certificato' }}';
+
+            // Generate the public URL (we'll make an AJAX call to get the proper hash)
+            fetch(`/founders/certificates/${certificateId}/public-url`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.url) {
+                        // Show modal with link
+                        showPublicLinkModal(data.url, investorName);
+                    } else {
+                        alert('Errore nella generazione del link');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Errore nella generazione del link');
+                });
+        }
+
+        function showPublicLinkModal(url, investorName) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <div class="flex items-center mb-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-medium text-gray-900">Link Pubblico Generato</h3>
+                            <p class="text-sm text-gray-500">Certificato di ${investorName}</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL del Certificato</label>
+                        <div class="flex">
+                            <input type="text" id="publicUrl" value="${url}" readonly
+                                class="flex-1 rounded-l-md border-gray-300 bg-gray-50 px-3 py-2 text-sm">
+                            <button type="button" onclick="copyPublicUrl()"
+                                class="px-4 py-2 bg-green-600 text-white rounded-r-md hover:bg-green-700 text-sm">
+                                Copia
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                        <div class="flex">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    Questo link è sicuro e può essere condiviso pubblicamente.
+                                    Mostra il certificato in una pagina web elegante,
+                                    ottimizzata per stampa e condivisione.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="window.open('${url}', '_blank')"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            🔗 Visualizza
+                        </button>
+                        <button type="button" onclick="closePublicLinkModal()"
+                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
+                            Chiudi
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Close on background click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closePublicLinkModal();
+                }
+            });
+        }
+
+        function copyPublicUrl() {
+            const urlInput = document.getElementById('publicUrl');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                // Show success feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copiato!';
+                button.className = button.className.replace('bg-green-600', 'bg-emerald-600');
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.className = button.className.replace('bg-emerald-600', 'bg-green-600');
+                }, 2000);
+            });
+        }
+
+        function closePublicLinkModal() {
+            const modal = document.querySelector('.fixed.inset-0.z-50');
+            if (modal) {
+                modal.remove();
+            }
         }
     </script>
 </x-founders-layout>

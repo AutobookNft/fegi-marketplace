@@ -56,6 +56,8 @@ class FounderCertificate extends Model
         'base_price' => 'decimal:2',
         'metadata' => 'array',
         'issued_at' => 'datetime',
+        'minted_at' => 'datetime',
+        'pdf_generated_at' => 'datetime',
         'artifact_ordered' => 'boolean',
         'artifact_ordered_at' => 'datetime',
         'artifact_paid' => 'boolean',
