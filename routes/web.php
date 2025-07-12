@@ -122,6 +122,10 @@ Route::prefix('founders')->name('founders.')->group(function () {
         Route::get('/certificates/{certificate}/pdf', [App\Http\Controllers\CertificateController::class, 'generatePdf'])->name('certificates.generate-pdf');
         Route::get('/certificates/{certificate}/pdf/stream', [App\Http\Controllers\CertificateController::class, 'streamPdf'])->name('certificates.stream-pdf');
 
+        // Legal PDF routes
+        Route::get('/certificates/{certificate}/legal-pdf', [App\Http\Controllers\CertificateController::class, 'generateLegalPdf'])->name('certificates.generate-legal-pdf');
+        Route::get('/certificates/{certificate}/legal-pdf/stream', [App\Http\Controllers\CertificateController::class, 'streamLegalPdf'])->name('certificates.stream-legal-pdf');
+
         // Public URL generation
         Route::get('/certificates/{certificate}/public-url', [App\Http\Controllers\CertificateController::class, 'getPublicUrlAjax'])->name('certificates.public-url');
 
@@ -279,6 +283,14 @@ Route::get('/test-mpdf', function () {
 // Route pubblico per visualizzare il certificato (con hash per sicurezza)
 Route::get('/certificate/{id}/{hash}', [App\Http\Controllers\CertificateController::class, 'showPublic'])
     ->name('certificate.public');
+
+// Route per scaricare PNG del certificato
+Route::get('/certificate/{id}/{hash}/image', [App\Http\Controllers\CertificateController::class, 'downloadImage'])
+    ->name('certificate.image');
+
+// Route per scaricare PDF legale del certificato
+Route::get('/certificate/{id}/{hash}/legal-pdf', [App\Http\Controllers\CertificateController::class, 'downloadLegalPdf'])
+    ->name('certificate.legal-pdf');
 
 // Route di test per generare link pubblico
 Route::get('/test-public-certificate/{id?}', function ($id = null) {

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Services\PDFCertificateService;
+use App\Services\LegalCertificateService;
 
 /**
  * @Oracode Certificate Controller for FlorenceEGI Founders System
@@ -360,5 +361,84 @@ class CertificateController extends Controller
             'certificate_id' => $certificate->id,
             'investor_name' => $certificate->investor_name,
         ]);
+    }
+
+    /**
+     * Download PNG image of certificate.
+     */
+    public function downloadImage($id, $hash)
+    {
+        $certificate = FounderCertificate::with(['collection.certificateBenefits'])->findOrFail($id);
+
+        // Verify security hash
+        if (!$this->verifyPublicHash($certificate, $hash)) {
+            abort(404, 'Certificato non trovato o link non valido.');
+        }
+
+        try {
+            $imageService = new \App\Services\CertificateImageService();
+            return $imageService->streamCertificateImage($certificate);
+        } catch (\Exception $e) {
+            return response('Errore generazione immagine: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Generate legal PDF certificate for administrative use.
+     */
+    public function generateLegalPdf(FounderCertificate $certificate)
+    {
+        try {
+            $legalService = new LegalCertificateService();
+            $path = $legalService->generateLegalCertificate($certificate);
+
+            // Update certificate with legal PDF path
+            $certificate->update([
+                'legal_pdf_path' => $path,
+                'legal_pdf_generated_at' => now(),
+            ]);
+
+            // Download PDF
+            return response()->download(
+                Storage::disk('public')->path($path),
+                "Certificato-Legale-FlorenceEGI-{$certificate->id}.pdf"
+            );
+        } catch (\Exception $e) {
+            return redirect()->route('founders.certificates.show', $certificate)
+                ->with('error', 'Errore generazione PDF legale: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Stream legal PDF certificate.
+     */
+    public function streamLegalPdf(FounderCertificate $certificate)
+    {
+        try {
+            $legalService = new LegalCertificateService();
+            return $legalService->streamLegalCertificate($certificate);
+        } catch (\Exception $e) {
+            return response('Errore generazione PDF legale: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Download legal PDF via public link with hash verification.
+     */
+    public function downloadLegalPdf($id, $hash)
+    {
+        $certificate = FounderCertificate::with(['collection.certificateBenefits'])->findOrFail($id);
+
+        // Verify security hash
+        if (!$this->verifyPublicHash($certificate, $hash)) {
+            abort(404, 'Certificato non trovato o link non valido.');
+        }
+
+        try {
+            $legalService = new LegalCertificateService();
+            return $legalService->streamLegalCertificate($certificate);
+        } catch (\Exception $e) {
+            return response('Errore generazione PDF legale: ' . $e->getMessage(), 500);
+        }
     }
 }

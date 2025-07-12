@@ -14,6 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.0",
+        "spatie/browsershot": "^5.0",
         "ultra/ultra-error-manager": "dev-main",
         "ultra/ultra-log-manager": "dev-main",
         "ultra/ultra-translation-manager": "dev-main"

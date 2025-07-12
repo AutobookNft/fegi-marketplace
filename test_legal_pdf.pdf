@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="refresh" content="0;url='https://localhost:8443/founders/wallet/connect'" />
+
+        <title>Redirecting to https://localhost:8443/founders/wallet/connect</title>
+    </head>
+    <body>
+        Redirecting to <a href="https://localhost:8443/founders/wallet/connect">https://localhost:8443/founders/wallet/connect</a>.
+    </body>
+</html>

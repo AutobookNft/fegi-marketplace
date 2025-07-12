@@ -76,9 +76,9 @@ services:
         image: redis:alpine
         container_name: redis
         ports:
-        - "6379:6379"
+            - "6379:6379"
         networks:
-        - sail
+            - sail
 networks:
     sail:
         driver: bridge

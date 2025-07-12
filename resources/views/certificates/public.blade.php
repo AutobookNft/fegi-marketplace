@@ -773,7 +773,8 @@
         <div class="navigation-header">
             <div class="nav-logo">FLORENCEEGI</div>
             <div class="nav-actions">
-                <button class="nav-button" onclick="window.print()">🖨️ Stampa Certificato</button>
+                <button class="nav-button" onclick="window.print()">🖨️ Stampa Browser</button>
+                <button class="nav-button" onclick="downloadLegalPdf()">📋 Scarica PDF Legale</button>
                 <button class="nav-button"
                     onclick="navigator.share ? navigator.share({title: 'Certificato FlorenceEGI', url: window.location.href}) : copyToClipboard(window.location.href)">📤
                     Condividi</button>
@@ -983,6 +984,37 @@
             navigator.clipboard.writeText(text).then(() => {
                 alert('Link copiato negli appunti!');
             });
+        }
+
+
+
+        // Funzione per scaricare PDF legale
+        function downloadLegalPdf() {
+            // Mostra loading
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Generando PDF...';
+            button.disabled = true;
+
+            // Costruisce URL per il download PDF legale
+            const currentUrl = window.location.href;
+            const pdfUrl = currentUrl + '/legal-pdf';
+
+            // Crea link temporaneo per download
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = 'certificato-legale-florenceegi.pdf';
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Ripristina pulsante dopo 2 secondi
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 2000);
         }
 
         // Animazione di ingresso
