@@ -212,6 +212,68 @@ function setupEventListeners() {
 }
 ```
 
+## Problema: Laravel genera URL senza HTTPS e porta
+
+**Sintomo**: PeraWallet non funziona perché Laravel genera URL come `http://localhost/founders/certificates/create` invece di `https://localhost:8443/founders/certificates/create`
+
+**Causa**: Laravel non riconosce i proxy headers di nginx e non sa che l'app è servita su HTTPS:8443
+
+## Soluzione
+
+### 1. Aggiornare nginx.conf
+
+```nginx
+proxy_set_header X-Forwarded-Proto https;
+proxy_set_header X-Forwarded-Port 8443;
+proxy_set_header Host localhost:8443;
+```
+
+### 2. Creare middleware ForceHttpsMiddleware
+
+```php
+// app/Http/Middleware/ForceHttpsMiddleware.php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
+
+class ForceHttpsMiddleware
+{
+    public function handle(Request $request, Closure $next)
+    {
+        if ($request->header('X-Forwarded-Proto') === 'https') {
+            $request->server->set('HTTPS', 'on');
+            $request->server->set('SERVER_PORT', $request->header('X-Forwarded-Port', 443));
+            URL::forceScheme('https');
+        }
+
+        return $next($request);
+    }
+}
+```
+
+### 3. Registrare middleware in bootstrap/app.php
+
+```php
+return Application::configure(basePath: dirname(__DIR__))
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->prepend(ForceHttpsMiddleware::class);
+    })
+```
+
+### Test
+
+```bash
+# Deve generare: https://localhost:8443/founders/certificates/create
+php artisan tinker
+>>> route('founders.certificates.create')
+```
+
+**IMPORTANTE**: PeraWallet richiede HTTPS - è obbligatorio!
+
 ## Setup Tecnico Richiesto
 
 ### Prerequisiti Sistema

@@ -16,7 +16,7 @@ class CertificateCreateMenu extends MenuItem
         parent::__construct(
             translationKey: 'menu.certificate_create',
             route: 'founders.certificates.create',
-            icon: 'plus-circle',
+            icon: 'certificate_creation',
             permission: null,
             children: null,
             modalAction: null,

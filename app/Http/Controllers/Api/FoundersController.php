@@ -24,6 +24,7 @@ use App\Services\EmailNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Ultra\UltraLogManager\UltraLogManager;
 use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
@@ -434,16 +435,14 @@ class FoundersController extends Controller
      */
     private function generateCertificatePdf(FounderCertificate $certificate): array
     {
-        $certificateData = [
-            'index' => $certificate->index,
-            'investor_name' => $certificate->investor_name,
-            'investor_email' => $certificate->investor_email,
-            'asa_id' => $certificate->asa_id,
-            'tx_id' => $certificate->tx_id,
-            'issued_at' => $certificate->issued_at->toISOString()
-        ];
+        $pdfString = $this->pdfService->generateCertificatePDF($certificate);
 
-        return $this->pdfService->generateFounderCertificate($certificateData);
+        // Save PDF to storage
+        $filename = "certificate-{$certificate->id}-" . now()->format('Y-m-d') . ".pdf";
+        $path = "certificates/{$filename}";
+        Storage::disk('public')->put($path, $pdfString);
+
+        return ['pdf_path' => $path];
     }
 
     /**
@@ -476,6 +475,174 @@ class FoundersController extends Controller
         $explorerUrl = $this->config['algorand'][$network]['explorer_url'];
 
         return "{$explorerUrl}/tx/{$txId}";
+    }
+
+    /**
+     * @Oracode Mint existing certificate to blockchain
+     * 🎯 Purpose: Mint an existing 'issued' certificate to Algorand blockchain
+     *
+     * @param Request $request
+     * @param int $certificateId Certificate ID to mint
+     * @return JsonResponse Mint result
+     */
+    public function mintExisting(Request $request, int $certificateId): JsonResponse
+    {
+        $this->logger->info('Mint existing certificate request received', [
+            'type' => 'FOUNDER_MINT_EXISTING_REQUEST',
+            'certificate_id' => $certificateId,
+            'ip_address' => $request->ip(),
+        ]);
+
+        try {
+            // Find the certificate
+            $certificate = FounderCertificate::find($certificateId);
+
+            if (!$certificate) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Certificato non trovato'
+                ], 404);
+            }
+
+            // Validate certificate can be minted
+            if ($certificate->status !== 'issued') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo i certificati con status "issued" possono essere mintati'
+                ], 400);
+            }
+
+            if ($certificate->asa_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Questo certificato è già stato mintato su blockchain'
+                ], 400);
+            }
+
+            // Validate optional wallet update
+            $validatedData = [];
+            if ($request->has('investor_wallet') && $request->input('investor_wallet')) {
+                $request->validate([
+                    'investor_wallet' => [
+                        'string',
+                        new \App\Rules\AlgorandAddressRule()
+                    ]
+                ]);
+                $validatedData['investor_wallet'] = $request->input('investor_wallet');
+            }
+
+            // Process minting in transaction
+            $mintedCertificate = DB::transaction(function () use ($certificate, $validatedData) {
+                return $this->processCertificateMinting($certificate, $validatedData);
+            });
+
+            $this->logger->info('Certificate minted successfully', [
+                'type' => 'FOUNDER_MINT_EXISTING_SUCCESS',
+                'certificate_id' => $certificate->id,
+                'certificate_index' => $certificate->index,
+                'asa_id' => $mintedCertificate->asa_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Certificato mintato con successo su blockchain',
+                'data' => [
+                    'certificate_id' => $mintedCertificate->id,
+                    'certificate_number' => str_pad($mintedCertificate->index, 2, '0', STR_PAD_LEFT),
+                    'investor_name' => $mintedCertificate->investor_name,
+                    'asa_id' => $mintedCertificate->asa_id,
+                    'transaction_id' => $mintedCertificate->tx_id,
+                    'minted_at' => $mintedCertificate->updated_at->toISOString(),
+                    'token_location' => $mintedCertificate->investor_wallet ? 'investor_wallet' : 'treasury',
+                    'blockchain_explorer' => $this->getExplorerUrl($mintedCertificate->tx_id)
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dati di input non validi',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            $this->logger->error('Certificate minting failed', [
+                'type' => 'FOUNDER_MINT_EXISTING_FAILED',
+                'certificate_id' => $certificateId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @Oracode Process minting of existing certificate
+     * 🎯 Purpose: Execute blockchain mint and update certificate record
+     */
+    private function processCertificateMinting(FounderCertificate $certificate, array $validatedData): FounderCertificate
+    {
+        $this->logger->info('Starting certificate minting workflow', [
+            'type' => 'FOUNDER_MINTING_START',
+            'certificate_id' => $certificate->id,
+            'certificate_index' => $certificate->index,
+            'has_wallet_update' => !empty($validatedData['investor_wallet'])
+        ]);
+
+        // Step 1: Mint ASA token on Algorand using existing certificate index
+        $algorandResult = $this->mintCertificateToken($certificate->index);
+
+        // Step 2: Update wallet if provided and transfer token
+        $transferResult = null;
+        $walletToUse = $validatedData['investor_wallet'] ?? $certificate->investor_wallet;
+
+        if ($walletToUse) {
+            $transferResult = $this->transferTokenIfWalletProvided(['investor_wallet' => $walletToUse], $algorandResult['asaId']);
+        }
+
+        // Step 3: Update certificate with blockchain data
+        $updateData = [
+            'asa_id' => $algorandResult['asaId'],
+            'tx_id' => $algorandResult['txId'],
+            'status' => 'minted',
+            'minted_at' => now(),
+            'token_transferred' => $transferResult !== null,
+            'token_transferred_at' => $transferResult['transferred_at'] ?? null,
+            'transfer_tx_id' => $transferResult['transfer_tx_id'] ?? null,
+        ];
+
+        // Update wallet if provided
+        if (!empty($validatedData['investor_wallet'])) {
+            $updateData['investor_wallet'] = $validatedData['investor_wallet'];
+        }
+
+        $certificate->update($updateData);
+
+        // Step 4: Generate PDF certificate with QR code
+        $pdfString = $this->pdfService->generateCertificatePDF($certificate);
+
+        // Save PDF to storage
+        $filename = "certificate-{$certificate->id}-" . now()->format('Y-m-d') . ".pdf";
+        $path = "certificates/{$filename}";
+        Storage::disk('public')->put($path, $pdfString);
+
+        $pdfResult = ['pdf_path' => $path];
+
+        // Step 5: Send email notification
+        $this->sendCertificateEmail($certificate, $pdfResult['pdf_path']);
+
+        // Step 6: Update certificate with PDF path
+        $certificate->update(['pdf_path' => $pdfResult['pdf_path']]);
+
+        $this->logger->info('Certificate minting workflow completed', [
+            'type' => 'FOUNDER_MINTING_COMPLETE',
+            'certificate_id' => $certificate->id,
+            'certificate_index' => $certificate->index
+        ]);
+
+        return $certificate->fresh();
     }
 
     // ========================================

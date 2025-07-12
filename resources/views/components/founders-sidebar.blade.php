@@ -50,7 +50,7 @@
 <div class="drawer-side">
     <!-- drawer-overlay gestisce il click fuori dalla sidebar per chiuderla su mobile -->
     <label for="main-drawer" class="drawer-overlay"></label>
-    <aside class="bg-neutral text-neutral-content flex min-h-screen w-80 flex-col">
+    <aside class="flex min-h-screen w-80 flex-col bg-neutral text-neutral-content">
         <!-- Titolo del Contesto -->
         <div class="border-neutral-focus border-b p-6 text-2xl font-semibold">
             {{ $contextTitle }}
@@ -78,7 +78,7 @@
 
                         @if (!empty($menu['items']))
                             <!-- Summary con sottomenù -->
-                            <details class="collapse-arrow group collapse bg-transparent"
+                            <details class="group collapse collapse-arrow bg-transparent"
                                 @if ($isGroupActive) open @endif>
                                 <summary
                                     class="{{ $isGroupActive ? 'bg-primary text-primary-content shadow-sm rounded-md' : 'hover:bg-base-content hover:bg-opacity-10 rounded-md' }} cursor-pointer list-none transition-colors duration-150 ease-in-out">
@@ -104,7 +104,7 @@
                                             @if ($item['is_modal_action'])
                                                 <!-- Modal Action Button -->
                                                 <button type="button"
-                                                    class="hover:bg-base-content flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors duration-150 ease-in-out hover:bg-opacity-10">
+                                                    class="flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors duration-150 ease-in-out hover:bg-base-content hover:bg-opacity-10">
                                                     @if (!empty($item['icon']))
                                                         <span class="flex-shrink-0">
                                                             {!! $item['icon'] !!}
@@ -140,10 +140,26 @@
                         @endif
                     @endif
                 @endforeach
+
+                {{-- Link diretto ai Benefici (sempre visibile) --}}
+                <div class="border-neutral-focus/20 my-2 border-t"></div>
+                <div class="space-y-1">
+                    <a href="{{ route('founders.benefits.index') }}"
+                        class="{{ request()->routeIs('founders.benefits.*') ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-content hover:bg-opacity-10' }} flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150 ease-in-out">
+                        <span class="flex-shrink-0">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z">
+                                </path>
+                            </svg>
+                        </span>
+                        <span class="flex-grow truncate">👑 Gestione Benefici</span>
+                    </a>
+                </div>
             @else
                 <div class="py-12 text-center">
                     <p class="text-neutral-content opacity-60">Nessun menu disponibile</p>
-                    <p class="text-neutral-content mt-2 text-xs opacity-40">Context: {{ $context }}</p>
+                    <p class="mt-2 text-xs text-neutral-content opacity-40">Context: {{ $context }}</p>
                 </div>
             @endif
         </div>

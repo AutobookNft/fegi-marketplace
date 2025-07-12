@@ -67,6 +67,19 @@ Route::prefix('founders')->group(function () {
         ->name('api.founders.issue');
 
     /**
+     * @Oracode Mint existing certificate to blockchain
+     * POST /api/founders/{certificateId}/mint
+     *
+     * Request Body:
+     * - investor_wallet (optional|string|algorand_address) - Update wallet if provided
+     *
+     * Response: Mint result with ASA ID, transaction ID, PDF URL
+     */
+    Route::post('/{certificateId}/mint', [FoundersController::class, 'mintExisting'])
+        ->where('certificateId', '[0-9]+')
+        ->name('api.founders.mint-existing');
+
+    /**
      * @Oracode Get certificate information
      * GET /api/founders/{certificateId}
      *
@@ -87,6 +100,24 @@ Route::prefix('founders')->group(function () {
      */
     Route::get('/overview', [FoundersController::class, 'overview'])
         ->name('api.founders.overview');
+
+    /**
+     * @Oracode Get all collections
+     * GET /api/founders/collections
+     *
+     * Response: All collections with basic information
+     */
+    Route::get('/collections', [App\Http\Controllers\CollectionController::class, 'api'])
+        ->name('api.founders.collections');
+
+    /**
+     * @Oracode Get collections available for sale
+     * GET /api/founders/collections/available
+     *
+     * Response: Collections currently available for certificate issuance
+     */
+    Route::get('/collections/available', [App\Http\Controllers\CollectionController::class, 'available'])
+        ->name('api.founders.collections.available');
 });
 
 // Wallet Connection API Routes

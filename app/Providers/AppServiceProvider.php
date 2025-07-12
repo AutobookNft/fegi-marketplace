@@ -22,9 +22,7 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-       $this->app->singleton(UltraLogManager::class);
-
-
+        $this->app->singleton(UltraLogManager::class);
     }
 
     /**

@@ -1,484 +1,544 @@
-{{--
-    @Oracode PDF Certificate Template for FlorenceEGI Founders
-    🎯 Purpose: Branded PDF certificate with Rinascimento styling for printing and digital use
-    🧱 Core Logic: Professional certificate layout, blockchain verification, brand compliance
-    🛡️ Security: QR codes for verification, certificate hash, tamper-evident design
-
-    @package resources/views/pdf
-    @author Padmin D. Curtis (AI Partner OS3.0) for Fabio Cherici
-    @version 1.0.0 (FlorenceEGI - PDF Certificate Template)
-    @date 2025-07-05
-    @purpose Professional PDF certificate for Padre Fondatore with complete branding
---}}
-
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificato Padre Fondatore #{{ $certificate_number }} - FlorenceEGI</title>
+    <title>Certificato di Fondazione FlorenceEGI</title>
     <style>
-        /* FlorenceEGI Brand Fonts and Colors */
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+Pro:wght@300;400;500;600;700&display=swap');
-
-        :root {
-            --oro-fiorentino: #D4A574;
-            --verde-rinascita: #2D5016;
-            --blu-algoritmo: #1B365D;
-            --grigio-pietra: #6B6B6B;
+        @page {
+            size: A4 portrait;
+            margin: 0;
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Source Sans Pro', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #ffffff 0%, #fefcf8 50%, #fef7e8 100%);
+            font-family: serif;
+            color: #2c1810;
+            line-height: 1.3;
+            background: #faf8f2;
+            padding: 0;
+            margin: 0;
         }
 
         .certificate-container {
             width: 210mm;
-            height: 297mm; /* A4 */
-            padding: 20mm;
-            margin: 0 auto;
+            height: 297mm;
             position: relative;
-            background: #ffffff;
-            box-shadow: 0 0 20mm rgba(212, 165, 116, 0.1);
+            background: linear-gradient(to bottom, #fefcf7 0%, #faf8f2 100%);
+            border: 12px solid #8b6914;
+            padding: 20px;
+            margin: 0;
         }
 
-        /* Decorative Border - Renaissance Style */
-        .certificate-border {
+        .inner-border {
+            border: 2px solid #daa520;
+            padding: 15px;
+            height: 100%;
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .corner-ornament {
             position: absolute;
-            top: 15mm;
-            left: 15mm;
-            right: 15mm;
-            bottom: 15mm;
-            border: 3px solid var(--oro-fiorentino);
-            border-radius: 8mm;
-            background: linear-gradient(135deg, #ffffff 0%, #fefcf8 100%);
+            font-size: 45px;
+            color: #8b6914;
+            font-weight: bold;
         }
 
-        .certificate-border::before {
-            content: '';
-            position: absolute;
-            top: 3mm;
-            left: 3mm;
-            right: 3mm;
-            bottom: 3mm;
-            border: 1px solid rgba(212, 165, 116, 0.3);
-            border-radius: 6mm;
+        .corner-ornament.top-left {
+            top: 15px;
+            left: 15px;
         }
 
-        /* Header Section */
-        .certificate-header {
+        .corner-ornament.top-right {
+            top: 15px;
+            right: 15px;
+        }
+
+        .corner-ornament.bottom-left {
+            bottom: 15px;
+            left: 15px;
+        }
+
+        .corner-ornament.bottom-right {
+            bottom: 15px;
+            right: 15px;
+        }
+
+        .header {
             text-align: center;
-            margin: 15mm 0 10mm;
-            position: relative;
-            z-index: 2;
+            margin-bottom: 15px;
         }
 
-        .logo-section {
-            margin-bottom: 8mm;
+        .company-logo {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            margin-bottom: 8px;
+            color: #8b6914;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .company-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 28pt;
-            font-weight: 700;
-            color: var(--oro-fiorentino);
-            letter-spacing: 2px;
-            margin-bottom: 3mm;
-            text-shadow: 1px 1px 2px rgba(212, 165, 116, 0.3);
-        }
-
-        .company-tagline {
-            font-size: 12pt;
-            color: var(--verde-rinascita);
-            font-weight: 500;
+        .company-subtitle {
+            font-size: 13px;
+            font-style: italic;
+            color: #704214;
+            margin-bottom: 10px;
             letter-spacing: 1px;
-            margin-bottom: 8mm;
+        }
+
+        .ornamental-divider {
+            font-size: 20px;
+            color: #8b6914;
+            margin: 8px 0;
         }
 
         .certificate-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 24pt;
-            font-weight: 600;
-            color: var(--blu-algoritmo);
-            margin-bottom: 5mm;
-            letter-spacing: 1px;
-        }
-
-        .certificate-subtitle {
-            font-size: 14pt;
-            color: var(--grigio-pietra);
-            font-weight: 400;
-            margin-bottom: 10mm;
-        }
-
-        /* Certificate Content */
-        .certificate-content {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin: 15px 0 10px 0;
             text-align: center;
-            margin: 10mm 0;
-            position: relative;
-            z-index: 2;
+            color: #8b6914;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .certificate-text {
-            font-size: 14pt;
-            line-height: 1.8;
-            color: #333;
-            margin-bottom: 8mm;
+        .certificate-number {
+            font-size: 12px;
+            color: #704214;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .main-content {
+            text-align: center;
+            margin: 15px 0;
+            flex-shrink: 0;
+        }
+
+        .proclamation {
+            font-size: 14px;
+            color: #2c1810;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            font-weight: 500;
         }
 
         .investor-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 22pt;
-            font-weight: 600;
-            color: var(--oro-fiorentino);
-            margin: 8mm 0;
+            font-size: 32px;
+            font-weight: bold;
+            font-style: italic;
+            margin: 15px 0;
+            color: #8b6914;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             letter-spacing: 1px;
-            text-transform: uppercase;
-            border-bottom: 2px solid var(--oro-fiorentino);
-            padding-bottom: 3mm;
-            display: inline-block;
-            min-width: 80mm;
         }
 
-        .certificate-details {
-            margin: 10mm 0;
-            text-align: left;
-            max-width: 150mm;
-            margin-left: auto;
-            margin-right: auto;
+        .founder-declaration {
+            font-size: 15px;
+            color: #2c1810;
+            margin: 12px 0;
+            line-height: 1.4;
+            font-weight: 500;
         }
 
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3mm;
-            padding: 2mm 0;
-            border-bottom: 1px dotted rgba(212, 165, 116, 0.3);
+        .emphasis {
+            font-size: 18px;
+            font-weight: bold;
+            color: #8b6914;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        .detail-label {
-            font-weight: 600;
-            color: var(--blu-algoritmo);
-            font-size: 11pt;
+        .registry-section {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #daa520;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            flex-shrink: 0;
         }
 
-        .detail-value {
-            color: #333;
-            font-size: 11pt;
-            font-family: 'JetBrains Mono', monospace;
+        .registry-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #8b6914;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        /* Blockchain Section */
-        .blockchain-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border: 2px solid var(--blu-algoritmo);
-            border-radius: 6mm;
-            padding: 6mm;
-            margin: 8mm 0;
+        .registry-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .registry-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #daa520;
+            color: #2c1810;
+            font-weight: 500;
+        }
+
+        .registry-table td:first-child {
+            font-weight: bold;
+            color: #704214;
+            width: 40%;
+        }
+
+        .benefits-section {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid #daa520;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            flex-shrink: 0;
+        }
+
+        .benefits-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #8b6914;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .benefits-list li {
+            font-size: 11px;
+            color: #2c1810;
+            margin: 6px 0;
+            padding-left: 20px;
             position: relative;
-        }
-
-        .blockchain-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 14pt;
-            font-weight: 600;
-            color: var(--blu-algoritmo);
-            text-align: center;
-            margin-bottom: 4mm;
-        }
-
-        .blockchain-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3mm;
-            margin-bottom: 4mm;
-        }
-
-        .blockchain-item {
-            text-align: center;
-        }
-
-        .blockchain-label {
-            font-size: 9pt;
-            color: var(--grigio-pietra);
+            line-height: 1.3;
             font-weight: 500;
-            margin-bottom: 1mm;
         }
 
-        .blockchain-value {
-            font-size: 10pt;
-            color: var(--blu-algoritmo);
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 500;
-            word-break: break-all;
-        }
-
-        /* QR Code Section */
-        .qr-section {
+        .benefits-list li::before {
+            content: "⚜";
             position: absolute;
-            bottom: 25mm;
-            right: 25mm;
+            left: 0;
+            color: #8b6914;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .footer {
+            display: table;
+            width: 100%;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+
+        .footer-left {
+            display: table-cell;
+            width: 130px;
             text-align: center;
-            z-index: 3;
+            vertical-align: bottom;
         }
 
-        .qr-code {
-            width: 20mm;
-            height: 20mm;
-            border: 2px solid var(--oro-fiorentino);
-            border-radius: 2mm;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8pt;
-            color: var(--grigio-pietra);
-            margin-bottom: 2mm;
+        .footer-right {
+            display: table-cell;
+            width: 130px;
+            text-align: center;
+            vertical-align: bottom;
         }
 
-        .qr-label {
-            font-size: 8pt;
-            color: var(--grigio-pietra);
-            font-weight: 500;
+        .footer-center {
+            display: table-cell;
+            text-align: center;
+            vertical-align: bottom;
         }
 
-        /* Certificate Footer */
-        .certificate-footer {
+        .digital-seal {
+            text-align: center;
+        }
+
+        .seal-circle {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #8b6914;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #ffd700 0%, #daa520 50%, #8b6914 100%);
+            display: inline-block;
+            position: relative;
+            margin-bottom: 6px;
+        }
+
+        .seal-text {
             position: absolute;
-            bottom: 30mm;
-            left: 25mm;
-            right: 35mm;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 7px;
+            font-weight: bold;
+            color: #2c1810;
             text-align: center;
-            z-index: 2;
+            line-height: 1.1;
         }
 
-        .issue-date {
-            font-size: 12pt;
-            color: var(--verde-rinascita);
-            font-weight: 500;
-            margin-bottom: 3mm;
+        .seal-caption {
+            font-size: 8px;
+            color: #704214;
+            font-weight: bold;
+            font-style: italic;
         }
 
-        .certificate-hash {
-            font-size: 9pt;
-            color: var(--grigio-pietra);
-            font-family: 'JetBrains Mono', monospace;
-            margin-bottom: 3mm;
-        }
-
-        .authority-signature {
-            margin-top: 5mm;
-            text-align: right;
+        .signature-section {
+            text-align: center;
         }
 
         .signature-line {
-            border-bottom: 2px solid var(--oro-fiorentino);
-            width: 50mm;
-            margin: 3mm 0 2mm auto;
+            border-top: 1px solid #8b6914;
+            margin: 15px auto 8px;
+            width: 100px;
         }
 
-        .signature-label {
-            font-size: 10pt;
-            color: var(--blu-algoritmo);
-            font-weight: 500;
+        .signature-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #8b6914;
+            margin-bottom: 3px;
         }
 
-        /* Decorative Elements */
-        .decorative-element {
+        .signature-title {
+            font-size: 9px;
+            color: #704214;
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        .verification-section {
+            text-align: center;
+        }
+
+        .qr-code {
+            width: 45px;
+            height: 45px;
+            border: 2px solid #8b6914;
+            border-radius: 4px;
+            background: white;
+            display: inline-block;
+            margin: 0 auto 6px;
+            position: relative;
+        }
+
+        .qr-code::after {
+            content: 'QR';
             position: absolute;
-            opacity: 0.1;
-            z-index: 1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            font-weight: bold;
+            color: #8b6914;
         }
 
-        .decorative-element.top-left {
-            top: 25mm;
-            left: 25mm;
-            width: 15mm;
-            height: 15mm;
-            background: radial-gradient(circle, var(--oro-fiorentino) 0%, transparent 70%);
-            border-radius: 50%;
+        .verification-text {
+            font-size: 8px;
+            color: #704214;
+            margin-top: 4px;
+            font-weight: 500;
+            line-height: 1.2;
         }
 
-        .decorative-element.bottom-right {
-            bottom: 45mm;
-            right: 45mm;
-            width: 20mm;
-            height: 20mm;
-            background: radial-gradient(circle, var(--verde-rinascita) 0%, transparent 70%);
-            border-radius: 50%;
+        .verification-url {
+            font-family: monospace;
+            font-size: 7px;
+            color: #8b6914;
+            margin-top: 2px;
+            font-weight: bold;
         }
 
-        /* Watermark */
         .watermark {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-family: 'Playfair Display', serif;
-            font-size: 48pt;
-            color: rgba(212, 165, 116, 0.05);
-            font-weight: 700;
+            font-size: 80px;
+            color: rgba(218, 165, 32, 0.03);
+            font-weight: bold;
             z-index: 1;
+        }
+
+        .decorative-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             pointer-events: none;
+            z-index: 2;
         }
 
-        /* Print Optimizations */
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-                background: white;
-            }
-
-            .certificate-container {
-                box-shadow: none;
-                border: none;
-                margin: 0;
-                padding: 15mm;
-            }
+        .flourish {
+            position: absolute;
+            font-size: 50px;
+            color: rgba(139, 105, 20, 0.08);
+            font-weight: bold;
         }
 
-        /* Responsive adjustments for smaller screens */
-        @media screen and (max-width: 800px) {
-            .certificate-container {
-                width: 100%;
-                height: auto;
-                min-height: 100vh;
-                padding: 5mm;
-            }
+        .flourish.left {
+            top: 120px;
+            left: 5px;
+            transform: rotate(-15deg);
+        }
 
-            .company-name {
-                font-size: 24pt;
-            }
+        .flourish.right {
+            top: 120px;
+            right: 5px;
+            transform: rotate(15deg);
+        }
 
-            .certificate-title {
-                font-size: 20pt;
-            }
-
-            .investor-name {
-                font-size: 18pt;
-            }
+        .final-ornament {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 16px;
+            color: #8b6914;
         }
     </style>
 </head>
+
 <body>
     <div class="certificate-container">
-        <!-- Decorative Border -->
-        <div class="certificate-border"></div>
+        <div class="inner-border">
+            <div class="watermark">AUTENTICO</div>
 
-        <!-- Decorative Elements -->
-        <div class="decorative-element top-left"></div>
-        <div class="decorative-element bottom-right"></div>
-
-        <!-- Watermark -->
-        <div class="watermark">FLORENCEEGI</div>
-
-        <!-- Certificate Header -->
-        <div class="certificate-header">
-            <div class="logo-section">
-                <div class="company-name">FlorenceEGI</div>
-                <div class="company-tagline">{{ $brand['tagline'] }}</div>
+            <div class="decorative-elements">
+                <div class="flourish left">❦</div>
+                <div class="flourish right">❦</div>
             </div>
 
-            <div class="certificate-title">CERTIFICATO PADRE FONDATORE</div>
-            <div class="certificate-subtitle">{{ $round_description }}</div>
-        </div>
+            <!-- Ornamenti decorativi agli angoli -->
+            <div class="corner-ornament top-left">❦</div>
+            <div class="corner-ornament top-right">❦</div>
+            <div class="corner-ornament bottom-left">❦</div>
+            <div class="corner-ornament bottom-right">❦</div>
 
-        <!-- Certificate Content -->
-        <div class="certificate-content">
-            <div class="certificate-text">
-                Questo certificato attesta che
+            <!-- Header -->
+            <div class="header">
+                <div class="company-logo">FLORENCEEGI</div>
+                <div class="company-subtitle">FlorenceEGI – Il nuovo Rinascimento Ecologico Digitale</div>
+                <div class="ornamental-divider">⚜ ❦ ⚜</div>
             </div>
 
-            <div class="investor-name">{{ $investor_name }}</div>
+            <!-- Titolo principale -->
+            <div class="certificate-title">CERTIFICATO DI FONDAZIONE</div>
+            <div class="certificate-number">Anno Domini {{ date('Y') }} • N.
+                {{ str_pad($certificate->id ?? 1, 4, '0', STR_PAD_LEFT) }}</div>
 
-            <div class="certificate-text">
-                è ufficialmente riconosciuto come <strong>Padre Fondatore</strong> del Nuovo Rinascimento Ecologico Digitale,
-                avendo contribuito alla realizzazione del progetto FlorenceEGI con l'acquisizione del certificato numero
-                <strong>#{{ $certificate_number }}</strong> di {{ $total_certificates }} emessi.
-            </div>
+            <!-- Contenuto principale -->
+            <div class="main-content">
+                <div class="proclamation">
+                    Nel nome del Nuovo Rinascimento e della rinascita tecnologica,<br>
+                    si attesta solennemente che il portatore di questo documento è riconosciuto come
+                </div>
 
-            <!-- Certificate Details -->
-            <div class="certificate-details">
-                <div class="detail-row">
-                    <span class="detail-label">Certificato N°:</span>
-                    <span class="detail-value">#{{ $certificate_number }}/{{ $total_certificates }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Round:</span>
-                    <span class="detail-value">{{ $round_name }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Valore:</span>
-                    <span class="detail-value">€{{ $certificate_price }} {{ $currency }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Data Emissione:</span>
-                    <span class="detail-value">{{ $issue_date_it }}</span>
+                <div class="investor-name">{{ $certificate->investor_name ?? 'Marco Rossi' }}</div>
+
+                <div class="founder-declaration">
+                    <span class="emphasis">PADRE FONDATORE</span><br>
+                    del progetto rivoluzionario FlorenceEGI, che unisce la maestria artistica fiorentina<br>
+                    con le tecnologie Blockchain più avanzate, creando un ecosistema digitale<br>
+                    che onora la tradizione mentre forgia il futuro della sostenibilità.
                 </div>
             </div>
-        </div>
 
-        <!-- Blockchain Verification Section -->
-        <div class="blockchain-section">
-            <div class="blockchain-title">🔗 Verifica Blockchain</div>
-            <div class="blockchain-details">
-                <div class="blockchain-item">
-                    <div class="blockchain-label">ASA Token ID</div>
-                    <div class="blockchain-value">{{ $asa_id }}</div>
-                </div>
-                <div class="blockchain-item">
-                    <div class="blockchain-label">Network</div>
-                    <div class="blockchain-value">Algorand</div>
-                </div>
-            </div>
-            <div class="blockchain-details">
-                <div class="blockchain-item" style="grid-column: 1 / -1;">
-                    <div class="blockchain-label">Transaction ID</div>
-                    <div class="blockchain-value" style="font-size: 9pt;">{{ $transaction_id }}</div>
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 3mm;">
-                <div style="font-size: 9pt; color: var(--grigio-pietra);">
-                    Verifica su: {{ $algorand_explorer_url }}
-                </div>
-            </div>
-        </div>
-
-        <!-- QR Code Section -->
-        <div class="qr-section">
-            <div class="qr-code">
-                <!-- QR Code placeholder - in real implementation this would be generated -->
-                <div style="font-size: 6pt; text-align: center;">
-                    QR<br>{{ $certificate_number }}
-                </div>
-            </div>
-            <div class="qr-label">Verifica Mobile</div>
-        </div>
-
-        <!-- Certificate Footer -->
-        <div class="certificate-footer">
-            <div class="issue-date">
-                Emesso il {{ $issue_date_it }}
-            </div>
-            <div class="certificate-hash">
-                Hash Certificato: {{ $certificate_hash }}
+            <!-- Sezione Registro Blockchain -->
+            <div class="registry-section">
+                <div class="registry-title">⚜ Registro Blockchain Algorand ⚜</div>
+                <table class="registry-table">
+                    <tr>
+                        <td>Certificato N.:</td>
+                        <td>{{ str_pad($certificate->id ?? 1, 6, '0', STR_PAD_LEFT) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Data Emissione:</td>
+                        <td>{{ ($certificate->issued_at ?? now())->format('d F Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Collection:</td>
+                        <td>{{ $certificate->collection->name ?? 'Padri Fondatori' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Valore Nominale:</td>
+                        <td>€{{ number_format($certificate->base_price ?? 250, 2, ',', '.') }}</td>
+                    </tr>
+                </table>
             </div>
 
-            <div class="authority-signature">
-                <div class="signature-line"></div>
-                <div class="signature-label">FlorenceEGI Authority</div>
+            <!-- Sezione Privilegi e Benefici -->
+            @if (isset($certificate->collection) &&
+                    isset($certificate->collection->activeBenefits) &&
+                    $certificate->collection->activeBenefits->count() > 0)
+                <div class="benefits-section">
+                    <div class="benefits-title">⚜ Privilegi e Benefici Esclusivi ⚜</div>
+                    <ul class="benefits-list">
+                        @foreach ($certificate->collection->activeBenefits->take(3) as $benefit)
+                            <li>{{ $benefit->title }} - {{ Str::limit($benefit->description, 60) }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-left">
+                    <div class="digital-seal">
+                        <div class="seal-circle">
+                            <div class="seal-text">
+                                FLORENCEEGI<br>
+                                CERTIFICATO<br>
+                                AUTENTICO<br>
+                                {{ date('Y') }}
+                            </div>
+                        </div>
+                        <div class="seal-caption">Sigillo Digitale</div>
+                    </div>
+                </div>
+
+                <div class="footer-center">
+                    <div class="verification-section">
+                        @if (isset($qrCodeImage))
+                            <img src="{{ $qrCodeImage }}" alt="QR Code"
+                                style="width: 45px; height: 45px; border: 2px solid #8b6914; border-radius: 4px; background: white;">
+                        @else
+                            <div class="qr-code"></div>
+                        @endif
+                        <div class="verification-text">
+                            Certificazione Blockchain<br>
+                            Scansiona per verifica
+                        </div>
+                        <div class="verification-url">florenceegi.it/{{ $certificate->id ?? '1' }}</div>
+                    </div>
+                </div>
+
+                <div class="footer-right">
+                    <div class="signature-section">
+                        <div class="signature-line"></div>
+                        <div class="signature-name">Fabio Cherici</div>
+                        <div class="signature-title">Direttore Generale</div>
+                    </div>
+                </div>
             </div>
+
+            <div class="final-ornament">❦ ⚜ ❦</div>
         </div>
     </div>
 </body>
+
 </html>

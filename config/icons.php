@@ -4,7 +4,31 @@ return [
     'styles' => [
         'default' => 'elegant',
         'elegant' => [
-            'certificate' => [
+
+            // CERTIFICATE
+            [
+                'name'          => 'certificate_creation',
+                'type'          => 'heroicon',
+                'class'         => 'w-5 h-5',
+                'host'          => '',
+                'name_on_host'  => '',
+                'html'          => '<svg fill="#34D399" viewBox="0 0 24 24" class="%class%">
+                                        <path d="M19.5 8.25v-2A2.25 2.25 0 0017.25 4h-10.5A2.25 2.25 0 004.5 6.25v11.5A2.25 2.25 0 006.75 20h10.5a2.25 2.25 0 002.25-2.25v-2h-1.5v2a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V6.25a.75.75 0 01.75-.75h10.5a.75.75 0 01.75.75v2h1.5z"/>
+                                        <path stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v3m1.5-1.5h-3"/>
+                                    </svg>',
+            ],
+            [
+                'name'          => 'spedizione',
+                'type'          => 'heroicon',
+                'class'         => 'w-5 h-5',
+                'host'          => '',
+                'name_on_host'  => '',
+                'html'          => '<svg fill="#34D399" viewBox="0 0 24 24" class="%class%">
+                                        <path d="M3 8.25A2.25 2.25 0 015.25 6h9.386a2.25 2.25 0 011.591.659l3.914 3.914A2.25 2.25 0 0121 12.386V16.5a.75.75 0 01-.75.75h-1.5a2.25 2.25 0 00-4.5 0h-6a2.25 2.25 0 00-4.5 0H3.75a.75.75 0 01-.75-.75v-7.5z"/>
+                                        <path d="M7.5 18.75a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm9 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/>
+                                    </svg>',
+            ],
+            [
                 'name' => 'certificate',
                 'type' => 'heroicon',
                 'class' => 'w-5 h-5',
@@ -15,7 +39,20 @@ return [
                 </svg>'
             ],
 
-            'wallet' => [
+            [
+                'name' => 'new_collection',
+                'type' => 'solid',
+                'class' => 'w-5 h-5',
+                'host' => '',
+                'name_on_host' => '',
+                'html' => '<svg xmlns="http://www.w3.org/2000/svg" class="%class%" viewBox="0 0 20 20">
+                    <path fill="#60A5FA" d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    <path d="M10 9v4m-2-2h4" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>',
+                // Nota: il "+" rimane bianco per contrasto sul blu, ma ora è stroke="#FFFFFF"
+            ],
+
+            [
                 'name' => 'wallet',
                 'type' => 'heroicon',
                 'class' => 'w-5 h-5',
@@ -26,7 +63,7 @@ return [
                 </svg>'
             ],
 
-            'truck' => [
+            [
                 'name' => 'truck',
                 'type' => 'heroicon',
                 'class' => 'w-5 h-5',
@@ -37,7 +74,7 @@ return [
                 </svg>'
             ],
 
-            'folder-collection' => [
+            [
                 'name' => 'folder-collection',
                 'type' => 'heroicon',
                 'class' => 'w-5 h-5',
@@ -48,7 +85,7 @@ return [
                 </svg>'
             ],
 
-            'chart-bar' => [
+            [
                 'name' => 'chart-bar',
                 'type' => 'heroicon',
                 'class' => 'w-5 h-5',

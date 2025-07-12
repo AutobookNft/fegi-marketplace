@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Force HTTPS recognition per PeraWallet (VITALE!)
+        $middleware->web(prepend: [
+            \App\Http\Middleware\ForceHttpsMiddleware::class,
+        ]);
+
         // Founders System: Wallet-based authentication middleware
         $middleware->alias([
             'wallet.auth' => \App\Http\Middleware\WalletAuthMiddleware::class,

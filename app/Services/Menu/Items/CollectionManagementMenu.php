@@ -14,9 +14,9 @@ class CollectionManagementMenu extends MenuItem
     public function __construct()
     {
         parent::__construct(
-            translationKey: 'menu.founders.collection_management',
-            route: 'founders.collections',
-            icon: 'folder_collection',
+            translationKey: 'menu.collection_management',
+            route: 'founders.collections.index',
+            icon: 'new_collection',
             permission: null,
             children: null,
             modalAction: null,

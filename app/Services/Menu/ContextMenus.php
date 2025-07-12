@@ -12,6 +12,7 @@ use App\Services\Menu\Items\CertificateCreateMenu;
 use App\Services\Menu\Items\TreasuryStatusMenu;
 use App\Services\Menu\Items\ShippingManagementMenu;
 use App\Services\Menu\Items\CollectionManagementMenu;
+use App\Services\Menu\Items\BenefitsManagementMenu;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,10 +33,10 @@ class ContextMenus
      */
     public static function getMenusForContext(string $context): array
     {
-       $menus = [];
+        $menus = [];
 
-       // Log the context for debugging purposes
-       Log::channel('foundrising')->info('Getting menus for context', ['context' => $context]);
+        // Log the context for debugging purposes
+        Log::channel('foundrising')->info('Getting menus for context', ['context' => $context]);
 
         switch ($context) {
             case 'dashboard':
@@ -44,11 +45,22 @@ class ContextMenus
 
             case 'founders':
                 // Menu Gestione Certificati
+                // Menu Collezioni (se necessario)
+                $collectionsMenu = new MenuGroup(__('menu.collections'), 'new_collection', [
+                    new CollectionManagementMenu(),
+                ]);
+                $menus[] = $collectionsMenu;
                 $certificatesMenu = new MenuGroup(__('menu.certificates'), 'certificate', [
                     new CertificateIssueMenu(),
                     new CertificateCreateMenu(),
                 ]);
                 $menus[] = $certificatesMenu;
+
+                // Menu Benefici
+                $benefitsMenu = new MenuGroup('Benefici', 'benefits', [
+                    new BenefitsManagementMenu(),
+                ]);
+                $menus[] = $benefitsMenu;
 
                 // Menu Treasury Management
                 $treasuryMenu = new MenuGroup(__('menu.treasury'), 'wallet', [
@@ -57,18 +69,12 @@ class ContextMenus
                 $menus[] = $treasuryMenu;
 
                 // Menu Spedizioni
-                $shippingMenu = new MenuGroup(__('menu.shipping'), 'truck', [
+                $shippingMenu = new MenuGroup(__('menu.shipping'), 'spedizione', [
                     new ShippingManagementMenu(),
                 ]);
                 $menus[] = $shippingMenu;
 
-                // Menu Collezioni (se necessario)
-                $collectionsMenu = new MenuGroup(__('menu.collections'), 'folder_collection', [
-                    new CollectionManagementMenu(),
-                ]);
-                $menus[] = $collectionsMenu;
                 break;
-
         }
 
         return $menus;

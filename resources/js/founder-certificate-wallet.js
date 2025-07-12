@@ -10,6 +10,9 @@ import { PeraWalletConnect } from "@perawallet/connect";
  * @date 2025-07-09
  */
 
+// Espone PeraWalletConnect globalmente per uso in altre parti del sistema
+window.PeraWalletConnect = PeraWalletConnect;
+
 // Configurazione globale
 const WALLET_CONFIG = {
     POLLING_INTERVAL: 2000,
@@ -461,21 +464,29 @@ async function saveWalletSession(address) {
         if (data.success) {
             console.log('Sessione salvata con successo');
 
-            // Gestisco il redirect manualmente con l'URL corretto
-            // Genero l'URL della dashboard con HTTPS:8443
-            let dashboardUrl = '/founders/dashboard';
+            // Redirect alla dashboard SOLO se siamo sulla pagina wallet-connect del Treasury
+            // Non fare redirect se siamo su altre pagine (es. pagina certificato)
+            const isWalletConnectPage = window.location.pathname === '/founders/wallet';
 
-            // Se siamo in development, forza HTTPS:8443
-            if (window.location.hostname === 'localhost') {
-                dashboardUrl = `https://localhost:8443${dashboardUrl}`;
+            if (isWalletConnectPage) {
+                // Gestisco il redirect manualmente con l'URL corretto
+                // Genero l'URL della dashboard con HTTPS:8443
+                let dashboardUrl = '/founders/dashboard';
+
+                // Se siamo in development, forza HTTPS:8443
+                if (window.location.hostname === 'localhost') {
+                    dashboardUrl = `https://localhost:8443${dashboardUrl}`;
+                }
+
+                console.log('Redirect verso:', dashboardUrl);
+
+                // Redirect dopo un breve delay per permettere all'UI di aggiornarsi
+                setTimeout(() => {
+                    window.location.href = dashboardUrl;
+                }, 1000);
+            } else {
+                console.log('Sessione salvata - nessun redirect (non siamo sulla pagina wallet-connect)');
             }
-
-            console.log('Redirect verso:', dashboardUrl);
-
-            // Redirect dopo un breve delay per permettere all'UI di aggiornarsi
-            setTimeout(() => {
-                window.location.href = dashboardUrl;
-            }, 1000);
         } else {
             console.error('Errore salvataggio sessione:', data.error);
             updateConnectionStatus('Errore autorizzazione wallet', 'error');
@@ -648,7 +659,22 @@ async function checkExistingSession() {
 
 // Inizializzazione quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Inizializzazione wallet system...');
+    // Inizializza il sistema Treasury SOLO sulla pagina wallet-connect
+    const isWalletConnectPage = window.location.pathname === '/founders/wallet';
+
+    if (!isWalletConnectPage) {
+        console.log('Sistema Treasury non inizializzato - non siamo sulla pagina wallet-connect');
+
+        // Inizializza solo PeraWallet per uso generale (senza UI Treasury)
+        if (!initializePeraWallet()) {
+            console.error('Impossibile inizializzare PeraWallet');
+        } else {
+            console.log('PeraWallet inizializzato per uso generale');
+        }
+        return;
+    }
+
+    console.log('Inizializzazione wallet system Treasury...');
 
     // Inizializza PeraWallet
     if (!initializePeraWallet()) {
@@ -676,7 +702,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         disconnectButton.addEventListener('click', disconnectWallet);
     }
 
-    console.log('Wallet system inizializzato');
+    console.log('Wallet system Treasury inizializzato');
 });
 
 // Cleanup quando la pagina viene chiusa

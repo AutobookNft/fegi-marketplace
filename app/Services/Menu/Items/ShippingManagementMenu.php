@@ -16,7 +16,7 @@ class ShippingManagementMenu extends MenuItem
         parent::__construct(
             translationKey: 'menu.shipping_management',
             route: 'founders.shipping.index',
-            icon: 'truck',
+            icon: 'spedizione',
             permission: null,
             children: null,
             modalAction: null,

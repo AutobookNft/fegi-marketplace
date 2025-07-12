@@ -3,7 +3,7 @@
 /**
  * @Oracode PDF Certificate Service for FlorenceEGI Founders System
  * 🎯 Purpose: Generate branded PDF certificates with FlorenceEGI Rinascimento styling
- * 🧱 Core Logic: Blade templating, Dompdf generation, storage management, brand compliance
+ * 🧱 Core Logic: Blade templating, mPDF generation, storage management, brand compliance
  * 🛡️ Security: File validation, storage paths, template sanitization
  *
  * @package App\Services
@@ -15,456 +15,328 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Storage;
+use App\Models\FounderCertificate;
+use App\Models\Collection;
+use Mpdf\Mpdf;
 use Illuminate\Support\Facades\View;
-use Ultra\UltraLogManager\UltraLogManager;
-use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 class PDFCertificateService
 {
-    private UltraLogManager $logger;
-    private ErrorManagerInterface $errorManager;
-    private array $config;
-    private Dompdf $dompdf;
-
     /**
-     * @Oracode Initialize PDF Certificate Service
-     * 🎯 Purpose: Setup PDF generation engine and configuration
-     *
-     * @param UltraLogManager $logger
-     * @param ErrorManagerInterface $errorManager
+     * Genera il PDF del certificato in stile pergamena rinascimentale
      */
-    public function __construct(
-        UltraLogManager $logger,
-        ErrorManagerInterface $errorManager
-    ) {
-        $this->logger = $logger;
-        $this->errorManager = $errorManager;
-        $this->config = config('founders.certificate');
-
-        // Initialize Dompdf with FlorenceEGI optimized settings
-        $this->initializeDompdf();
-
-        $this->logger->info('PDFCertificateService initialized', [
-            'type' => 'PDF_SERVICE_INIT',
-            'template_path' => $this->config['template_path'],
-            'storage_disk' => $this->config['storage_disk']
-        ]);
-    }
-
-    // ========================================
-    // PUBLIC API METHODS
-    // ========================================
-
-    /**
-     * @Oracode Generate PDF certificate for founder
-     * 🎯 Purpose: Create branded PDF certificate with certificate data
-     *
-     * @param array $certificateData Certificate information
-     * @return array [pdf_path, pdf_url, file_size] or exception on failure
-     * @throws \Exception
-     */
-    public function generateFounderCertificate(array $certificateData): array
+    public function generateCertificatePDF(FounderCertificate $certificate): string
     {
-        $this->logger->info('Starting PDF certificate generation', [
-            'type' => 'PDF_GENERATION_START',
-            'certificate_index' => $certificateData['index'] ?? null,
-            'investor_name' => $certificateData['investor_name'] ?? null
-        ]);
-
         try {
-            // Validate required certificate data
-            $this->validateCertificateData($certificateData);
-
-            // Prepare template variables with FlorenceEGI branding
-            $templateData = $this->prepareCertificateTemplateData($certificateData);
-
-            // Generate PDF content
-            $pdfContent = $this->generatePdfContent($templateData);
-
-            // Save PDF to storage
-            $storageResult = $this->savePdfToStorage($pdfContent, $certificateData['index']);
-
-            $this->logger->info('PDF certificate generated successfully', [
-                'type' => 'PDF_GENERATION_SUCCESS',
-                'certificate_index' => $certificateData['index'],
-                'pdf_path' => $storageResult['pdf_path'],
-                'file_size' => $storageResult['file_size']
+            // mPDF 8.x modern syntax
+            $mpdf = new Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 0,
+                'margin_right' => 0,
+                'margin_top' => 0,
+                'margin_bottom' => 0,
+                'margin_header' => 0,
+                'margin_footer' => 0,
+                'default_font' => 'dejavusans',
+                'tempDir' => storage_path('app/tmp'),
+                'fontDir' => [
+                    public_path('fonts'),
+                    storage_path('fonts')
+                ],
+                'fontdata' => [
+                    'cinzel' => [
+                        'R' => 'Cinzel-Regular.ttf',
+                        'B' => 'Cinzel-Bold.ttf',
+                    ],
+                    'playfair' => [
+                        'R' => 'PlayfairDisplay-Regular.ttf',
+                        'B' => 'PlayfairDisplay-Bold.ttf',
+                        'I' => 'PlayfairDisplay-Italic.ttf',
+                        'BI' => 'PlayfairDisplay-BoldItalic.ttf',
+                    ],
+                    'garamond' => [
+                        'R' => 'EBGaramond-Regular.ttf',
+                        'B' => 'EBGaramond-Bold.ttf',
+                        'I' => 'EBGaramond-Italic.ttf',
+                        'BI' => 'EBGaramond-BoldItalic.ttf',
+                    ]
+                ],
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
+                'allow_charset_conversion' => true,
+                'use_kwt' => true,
+                'shrink_tables_to_fit' => 1,
+                'use_active_forms' => false,
+                'dpi' => 300,
+                'img_dpi' => 300,
             ]);
 
-            return $storageResult;
+            // Configura CSS per print
+            $mpdf->WriteHTML('@page { size: A4 portrait; margin: 0; }', \Mpdf\HTMLParserMode::HEADER_CSS);
 
+            // Genera HTML dal template mPDF
+            $html = View::make('pdf.mpdf-certificate', [
+                'certificate' => $certificate,
+                'collection' => $certificate->collection,
+                'benefits' => $certificate->collection->certificateBenefits ?? collect(),
+                'qrCodeData' => $this->generateQRCodeData($certificate),
+                'qrCodeImage' => $this->generateQRCodeImage($certificate),
+                'verificationUrl' => $this->generateVerificationUrl($certificate)
+            ])->render();
+
+            $mpdf->WriteHTML($html);
+
+            return $mpdf->Output('', 'S');
         } catch (\Exception $e) {
-            $this->logger->error('PDF certificate generation failed', [
-                'type' => 'PDF_GENERATION_FAILED',
-                'certificate_index' => $certificateData['index'] ?? null,
-                'error' => $e->getMessage()
-            ]);
-
-            throw $this->errorManager->handle('PDF_GENERATION_FAILED', [
-                'certificate_index' => $certificateData['index'] ?? null,
-                'error' => $e->getMessage()
-            ], $e, true);
+            \Log::error('Errore generazione PDF mPDF: ' . $e->getMessage());
+            throw new \Exception('Errore durante la generazione del PDF: ' . $e->getMessage());
         }
     }
 
     /**
-     * @Oracode Get PDF certificate from storage
-     * 🎯 Purpose: Retrieve generated PDF file for download or email
-     *
-     * @param string $pdfPath Storage path to PDF file
-     * @return string PDF file content
-     * @throws \Exception
+     * Genera il nome del file PDF
      */
-    public function getCertificatePdf(string $pdfPath): string
+    private function generateFilename(FounderCertificate $certificate): string
     {
-        $this->logger->info('Retrieving PDF certificate', [
-            'type' => 'PDF_RETRIEVAL_START',
-            'pdf_path' => $pdfPath
-        ]);
+        $certificateNumber = str_pad($certificate->index ?? 1, 3, '0', STR_PAD_LEFT);
+        $collectionSlug = $certificate->collection?->slug ?? 'padri-fondatori';
+        $timestamp = now()->format('Y-m-d');
 
-        try {
-            $disk = Storage::disk($this->config['storage_disk']);
-
-            if (!$disk->exists($pdfPath)) {
-                throw new \Exception("PDF file not found: {$pdfPath}");
-            }
-
-            $pdfContent = $disk->get($pdfPath);
-
-            $this->logger->info('PDF certificate retrieved successfully', [
-                'type' => 'PDF_RETRIEVAL_SUCCESS',
-                'pdf_path' => $pdfPath,
-                'file_size' => strlen($pdfContent)
-            ]);
-
-            return $pdfContent;
-
-        } catch (\Exception $e) {
-            $this->logger->error('PDF certificate retrieval failed', [
-                'type' => 'PDF_RETRIEVAL_FAILED',
-                'pdf_path' => $pdfPath,
-                'error' => $e->getMessage()
-            ]);
-
-            throw $this->errorManager->handle('PDF_RETRIEVAL_FAILED', [
-                'pdf_path' => $pdfPath,
-                'error' => $e->getMessage()
-            ], $e, true);
-        }
+        return "certificate-{$collectionSlug}-{$certificateNumber}-{$timestamp}.pdf";
     }
 
     /**
-     * @Oracode Delete PDF certificate from storage
-     * 🎯 Purpose: Clean up PDF files when needed (GDPR compliance)
-     *
-     * @param string $pdfPath Storage path to PDF file
-     * @return bool Success status
+     * Genera l'URL di verifica del certificato
      */
-    public function deleteCertificatePdf(string $pdfPath): bool
+    private function generateVerificationUrl(FounderCertificate $certificate): string
     {
-        $this->logger->info('Deleting PDF certificate', [
-            'type' => 'PDF_DELETION_START',
-            'pdf_path' => $pdfPath
-        ]);
-
-        try {
-            $disk = Storage::disk($this->config['storage_disk']);
-
-            if ($disk->exists($pdfPath)) {
-                $disk->delete($pdfPath);
-
-                $this->logger->info('PDF certificate deleted successfully', [
-                    'type' => 'PDF_DELETION_SUCCESS',
-                    'pdf_path' => $pdfPath
-                ]);
-
-                return true;
-            }
-
-            $this->logger->warning('PDF certificate not found for deletion', [
-                'type' => 'PDF_DELETION_NOT_FOUND',
-                'pdf_path' => $pdfPath
-            ]);
-
-            return false;
-
-        } catch (\Exception $e) {
-            $this->logger->error('PDF certificate deletion failed', [
-                'type' => 'PDF_DELETION_FAILED',
-                'pdf_path' => $pdfPath,
-                'error' => $e->getMessage()
-            ]);
-
-            return false;
-        }
-    }
-
-    // ========================================
-    // PRIVATE HELPER METHODS
-    // ========================================
-
-    /**
-     * @Oracode Initialize Dompdf with optimized settings
-     * 🎯 Purpose: Configure PDF generation engine for certificates
-     */
-    private function initializeDompdf(): void
-    {
-        $options = new Options();
-
-        // Security and performance settings
-        $options->set('isRemoteEnabled', false);
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isFontSubsettingEnabled', true);
-        $options->set('defaultPaperSize', $this->config['pdf_format']);
-        $options->set('defaultPaperOrientation', $this->config['pdf_orientation']);
-
-        // Enable local file access for assets
-        $options->set('isPhpEnabled', false);
-        $options->set('chroot', [public_path(), storage_path('app/public')]);
-
-        $this->dompdf = new Dompdf($options);
+        return "https://scan.florenceegi.it/{$certificate->id}";
     }
 
     /**
-     * @Oracode Validate certificate data completeness
-     * 🎯 Purpose: Ensure all required data is present for PDF generation
+     * Genera dati QR Code per il certificato
      */
-    private function validateCertificateData(array $data): void
+    private function generateQRCodeData(FounderCertificate $certificate): string
     {
-        $requiredFields = [
-            'index',
-            'investor_name',
-            'investor_email',
-            'asa_id',
-            'tx_id',
-            'issued_at'
+        $data = [
+            'certificate_id' => $certificate->id,
+            'investor_name' => $certificate->investor_name,
+            'collection' => $certificate->collection?->name,
+            'verification_url' => $this->generateVerificationUrl($certificate),
+            'issued_at' => $certificate->issued_at?->format('Y-m-d H:i:s')
         ];
 
-        foreach ($requiredFields as $field) {
-            if (empty($data[$field])) {
-                throw new \InvalidArgumentException("Missing required certificate field: {$field}");
-            }
-        }
-
-        // Validate specific field formats
-        if (!is_numeric($data['index']) || $data['index'] < 1 || $data['index'] > 40) {
-            throw new \InvalidArgumentException("Invalid certificate index: must be 1-40");
-        }
-
-        if (!filter_var($data['investor_email'], FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException("Invalid email format");
-        }
+        return json_encode($data);
     }
 
     /**
-     * @Oracode Prepare template data with FlorenceEGI branding
-     * 🎯 Purpose: Build complete data structure for certificate template
+     * Genera l'immagine QR Code come stringa base64
      */
-    private function prepareCertificateTemplateData(array $certificateData): array
-    {
-        $brandConfig = $this->config['brand'];
-        $roundConfig = config('founders');
-
-        return [
-            // Certificate core data
-            'certificate_number' => str_pad($certificateData['index'], 2, '0', STR_PAD_LEFT),
-            'investor_name' => strtoupper($certificateData['investor_name']),
-            'investor_email' => $certificateData['investor_email'],
-            'issue_date' => Carbon::parse($certificateData['issued_at'])->format('d F Y'),
-            'issue_date_it' => Carbon::parse($certificateData['issued_at'])->locale('it')->isoFormat('D MMMM YYYY'),
-
-            // Blockchain data
-            'asa_id' => $certificateData['asa_id'],
-            'transaction_id' => $certificateData['tx_id'],
-            'algorand_explorer_url' => $this->getExplorerUrl($certificateData['tx_id']),
-
-            // Round information
-            'round_name' => $roundConfig['round_title'],
-            'round_description' => $roundConfig['round_description'],
-            'total_certificates' => $roundConfig['total_tokens'],
-            'certificate_price' => number_format($roundConfig['price_eur'], 0, ',', '.'),
-            'currency' => $roundConfig['currency'],
-
-            // FlorenceEGI branding
-            'brand' => [
-                'logo_url' => $brandConfig['logo_path'],
-                'colors' => $brandConfig['colors'],
-                'fonts' => $brandConfig['fonts'],
-                'company_name' => 'FlorenceEGI',
-                'tagline' => 'Il Nuovo Rinascimento Ecologico Digitale',
-                'website' => 'https://florenceegi.it'
-            ],
-
-            // Certificate authenticity
-            'certificate_hash' => $this->generateCertificateHash($certificateData),
-            'qr_code_data' => $this->generateQrCodeData($certificateData),
-            'generation_timestamp' => now()->toIso8601String(),
-
-            // Template metadata
-            'template_version' => '1.0.0',
-            'generation_system' => 'FlorenceEGI Founders System v1.0'
-        ];
-    }
-
-    /**
-     * @Oracode Generate PDF content from template
-     * 🎯 Purpose: Render Blade template and convert to PDF
-     */
-    private function generatePdfContent(array $templateData): string
+    private function generateQRCodeImage(FounderCertificate $certificate): string
     {
         try {
-            // Render Blade template
-            $html = View::make('pdf.founder-certificate', $templateData)->render();
+            // URL di verifica da codificare nel QR
+            $verificationUrl = $this->generateVerificationUrl($certificate);
 
-            // Load HTML into Dompdf
-            $this->dompdf->loadHtml($html);
-
-            // Set paper size and orientation
-            $this->dompdf->setPaper(
-                $this->config['pdf_format'],
-                $this->config['pdf_orientation']
+            // Configura il renderer con backend SVG
+            $renderer = new ImageRenderer(
+                new RendererStyle(200, 4), // size, margin
+                new SvgImageBackEnd()
             );
 
-            // Render PDF
-            $this->dompdf->render();
+            // Genera il QR code
+            $writer = new Writer($renderer);
+            $qrCodeString = $writer->writeString($verificationUrl);
 
-            return $this->dompdf->output();
+            // Converte SVG in base64 data URI
+            $base64 = base64_encode($qrCodeString);
 
+            return 'data:image/svg+xml;base64,' . $base64;
         } catch (\Exception $e) {
-            throw new \Exception("PDF rendering failed: " . $e->getMessage());
+            \Log::error('Errore generazione QR Code: ' . $e->getMessage());
+
+            // Fallback: placeholder SVG
+            $placeholderSvg = '<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">' .
+                '<rect width="200" height="200" fill="#f0f0f0" stroke="#8b6914" stroke-width="2"/>' .
+                '<text x="100" y="90" text-anchor="middle" font-size="20" fill="#8b6914">QR</text>' .
+                '<text x="100" y="115" text-anchor="middle" font-size="12" fill="#8b6914">Code</text>' .
+                '<text x="100" y="135" text-anchor="middle" font-size="8" fill="#999">Scan per verifica</text>' .
+                '</svg>';
+
+            return 'data:image/svg+xml;base64,' . base64_encode($placeholderSvg);
         }
     }
 
     /**
-     * @Oracode Save PDF to storage and return file information
-     * 🎯 Purpose: Store PDF file and generate access paths
+     * Visualizza il PDF nel browser
      */
-    private function savePdfToStorage(string $pdfContent, int $index): array
+    public function streamCertificatePDF(FounderCertificate $certificate)
     {
-        $timestamp = now()->format('YmdHis');
-        $filename = str_replace(
-            ['{index}', '{timestamp}'],
-            [str_pad($index, 2, '0', STR_PAD_LEFT), $timestamp],
-            $this->config['filename_template']
-        );
+        try {
+            // mPDF 8.x modern syntax
+            $mpdf = new Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'orientation' => 'P',
+                'margin_left' => 0,
+                'margin_right' => 0,
+                'margin_top' => 0,
+                'margin_bottom' => 0,
+                'margin_header' => 0,
+                'margin_footer' => 0,
+                'default_font' => 'dejavusans',
+                'tempDir' => storage_path('app/tmp'),
+                'fontDir' => [
+                    public_path('fonts'),
+                    storage_path('fonts')
+                ],
+                'fontdata' => [
+                    'cinzel' => [
+                        'R' => 'Cinzel-Regular.ttf',
+                        'B' => 'Cinzel-Bold.ttf',
+                    ],
+                    'playfair' => [
+                        'R' => 'PlayfairDisplay-Regular.ttf',
+                        'B' => 'PlayfairDisplay-Bold.ttf',
+                        'I' => 'PlayfairDisplay-Italic.ttf',
+                        'BI' => 'PlayfairDisplay-BoldItalic.ttf',
+                    ],
+                    'garamond' => [
+                        'R' => 'EBGaramond-Regular.ttf',
+                        'B' => 'EBGaramond-Bold.ttf',
+                        'I' => 'EBGaramond-Italic.ttf',
+                        'BI' => 'EBGaramond-BoldItalic.ttf',
+                    ]
+                ],
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
+                'allow_charset_conversion' => true,
+                'use_kwt' => true,
+                'shrink_tables_to_fit' => 1,
+                'use_active_forms' => false,
+                'dpi' => 300,
+                'img_dpi' => 300,
+            ]);
 
-        $storagePath = $this->config['storage_path'] . '/' . $filename;
-        $disk = Storage::disk($this->config['storage_disk']);
+            // Configura CSS per print
+            $mpdf->WriteHTML('@page { size: A4 portrait; margin: 0; }', \Mpdf\HTMLParserMode::HEADER_CSS);
 
-        // Create directory if it doesn't exist
-        $directory = dirname($storagePath);
-        if (!$disk->exists($directory)) {
-            $disk->makeDirectory($directory);
+            // Genera HTML dal template mPDF
+            $html = View::make('pdf.mpdf-certificate', [
+                'certificate' => $certificate,
+                'collection' => $certificate->collection,
+                'benefits' => $certificate->collection->benefits ?? collect(),
+                'qrCodeData' => $this->generateQRCodeData($certificate),
+                'qrCodeImage' => $this->generateQRCodeImage($certificate),
+                'verificationUrl' => route('certificate.verify', $certificate->verification_code)
+            ])->render();
+
+            $mpdf->WriteHTML($html);
+
+            return $mpdf->Output('certificato-' . $certificate->id . '.pdf', 'I');
+        } catch (\Exception $e) {
+            \Log::error('Errore stream PDF mPDF: ' . $e->getMessage());
+            throw new \Exception('Errore durante lo streaming del PDF: ' . $e->getMessage());
         }
-
-        // Save PDF file
-        $disk->put($storagePath, $pdfContent);
-
-        // Generate public URL if using public disk
-        $publicUrl = null;
-        if ($this->config['storage_disk'] === 'public') {
-            $publicUrl = Storage::disk('public')->url($storagePath);
-        }
-
-        return [
-            'pdf_path' => $storagePath,
-            'pdf_url' => $publicUrl,
-            'filename' => $filename,
-            'file_size' => strlen($pdfContent),
-            'mime_type' => 'application/pdf'
-        ];
     }
 
     /**
-     * @Oracode Generate certificate authenticity hash
-     * 🎯 Purpose: Create verification hash for certificate authenticity
+     * Genera PDF in batch per una collection
      */
-    private function generateCertificateHash(array $certificateData): string
+    public function generateCollectionPDFs(Collection $collection): array
     {
-        $hashData = [
-            $certificateData['index'],
-            $certificateData['investor_name'],
-            $certificateData['asa_id'],
-            $certificateData['tx_id'],
-            $certificateData['issued_at']
-        ];
+        $certificates = $collection->certificates()->ready()->get();
+        $generatedPaths = [];
 
-        return strtoupper(substr(hash('sha256', implode('|', $hashData)), 0, 16));
-    }
-
-    /**
-     * @Oracode Generate QR code data for certificate verification
-     * 🎯 Purpose: Create QR code content for mobile verification
-     */
-    private function generateQrCodeData(array $certificateData): string
-    {
-        return json_encode([
-            'type' => 'florenceegi_founder_certificate',
-            'version' => '1.0',
-            'certificate_id' => $certificateData['index'],
-            'asa_id' => $certificateData['asa_id'],
-            'tx_id' => $certificateData['tx_id'],
-            'verification_url' => url("/certificates/verify/{$certificateData['index']}")
-        ]);
-    }
-
-    /**
-     * @Oracode Get Algorand explorer URL for transaction
-     * 🎯 Purpose: Generate link to blockchain transaction
-     */
-    private function getExplorerUrl(string $txId): string
-    {
-        $network = config('founders.algorand.network');
-        $explorerUrl = config("founders.algorand.{$network}.explorer_url");
-
-        return "{$explorerUrl}/tx/{$txId}";
-    }
-
-    // ========================================
-    // PUBLIC UTILITY METHODS
-    // ========================================
-
-    /**
-     * @Oracode Get certificate template preview (HTML)
-     * 🎯 Purpose: Generate HTML preview for testing/debugging
-     */
-    public function generateCertificatePreview(array $certificateData): string
-    {
-        $templateData = $this->prepareCertificateTemplateData($certificateData);
-
-        return View::make('pdf.founder-certificate', $templateData)->render();
-    }
-
-    /**
-     * @Oracode Get service statistics
-     * 🎯 Purpose: Provide metrics for monitoring and admin interface
-     */
-    public function getServiceStatistics(): array
-    {
-        $disk = Storage::disk($this->config['storage_disk']);
-        $storagePath = $this->config['storage_path'];
-
-        $files = [];
-        $totalSize = 0;
-
-        if ($disk->exists($storagePath)) {
-            $files = $disk->files($storagePath);
-
-            foreach ($files as $file) {
-                $totalSize += $disk->size($file);
+        foreach ($certificates as $certificate) {
+            try {
+                $path = $this->generateCertificatePDF($certificate);
+                $generatedPaths[] = [
+                    'certificate_id' => $certificate->id,
+                    'path' => $path,
+                    'filename' => basename($path),
+                    'status' => 'success'
+                ];
+            } catch (\Exception $e) {
+                $generatedPaths[] = [
+                    'certificate_id' => $certificate->id,
+                    'error' => $e->getMessage(),
+                    'status' => 'error'
+                ];
             }
         }
 
-        return [
-            'total_certificates' => count($files),
-            'total_storage_size' => $totalSize,
-            'average_file_size' => count($files) > 0 ? round($totalSize / count($files)) : 0,
-            'storage_disk' => $this->config['storage_disk'],
-            'storage_path' => $storagePath
+        return $generatedPaths;
+    }
+
+    /**
+     * Verifica l'esistenza del PDF
+     */
+    public function pdfExists(FounderCertificate $certificate): bool
+    {
+        $filename = $this->generateFilename($certificate);
+        return Storage::disk('public')->exists("certificates/{$filename}");
+    }
+
+    /**
+     * Elimina il PDF esistente
+     */
+    public function deletePDF(FounderCertificate $certificate): bool
+    {
+        $filename = $this->generateFilename($certificate);
+        $path = "certificates/{$filename}";
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->delete($path);
+        }
+
+        return true;
+    }
+
+    /**
+     * Ottiene l'URL pubblico del PDF
+     */
+    public function getPDFUrl(FounderCertificate $certificate): ?string
+    {
+        $filename = $this->generateFilename($certificate);
+        $path = "certificates/{$filename}";
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Genera un hash di verifica per il certificato
+     */
+    public function generateVerificationHash(FounderCertificate $certificate): string
+    {
+        $data = [
+            'certificate_id' => $certificate->id,
+            'investor_name' => $certificate->investor_name,
+            'collection_id' => $certificate->collection_id,
+            'base_price' => $certificate->base_price,
+            'issued_at' => $certificate->issued_at?->timestamp,
         ];
+
+        return hash('sha256', json_encode($data) . config('app.key'));
+    }
+
+    /**
+     * Verifica l'autenticità del certificato tramite hash
+     */
+    public function verifyCertificate(FounderCertificate $certificate, string $hash): bool
+    {
+        return hash_equals($this->generateVerificationHash($certificate), $hash);
     }
 }

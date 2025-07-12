@@ -1,5 +1,5 @@
 <div class="p-6 text-white bg-gray-800 shadow-lg rounded-2xl">
-    
+
 
     {{-- Dashboard Header --}}
     <div class="mb-8">
@@ -41,7 +41,7 @@
     </div>
 
     {{-- Stats Cards --}}
-    <div class="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-5">
 
         {{-- Certificati Emessi --}}
         <div class="overflow-hidden bg-white border rounded-lg shadow border-slate-200">
@@ -61,7 +61,7 @@
                                 Certificati Emessi
                             </dt>
                             <dd class="text-lg font-medium text-slate-900">
-                                0 / 40
+                                {{ $collectionsStats['total_certificates'] }} / {{ $collectionsStats['total_capacity'] }}
                             </dd>
                         </dl>
                     </div>
@@ -139,7 +139,7 @@
                                 Revenue Totale
                             </dt>
                             <dd class="text-lg font-medium text-slate-900">
-                                €0
+                                €{{ number_format($collectionsStats['total_revenue'], 2) }}
                             </dd>
                         </dl>
                     </div>
@@ -147,7 +147,44 @@
             </div>
             <div class="px-5 py-3 bg-slate-50">
                 <div class="text-sm">
-                    <span class="text-slate-500">Prezzo: €250/certificato</span>
+                    <span class="text-slate-500">Prezzo medio: €{{ number_format($collectionsStats['average_price'], 2) }}/certificato</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Collections Stats --}}
+        <div class="overflow-hidden bg-white border rounded-lg shadow border-slate-200">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 h-8 bg-indigo-500 rounded-md">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1 w-0 ml-5">
+                        <dl>
+                            <dt class="text-sm font-medium truncate text-slate-500">
+                                Collections
+                            </dt>
+                            <dd class="text-lg font-medium text-slate-900">
+                                {{ $collectionsStats['active'] }} / {{ $collectionsStats['total'] }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="px-5 py-3 bg-slate-50">
+                <div class="text-sm">
+                    <span class="text-slate-500">
+                        @if($collectionsStats['total'] > 0)
+                            {{ $collectionsStats['total_certificates'] }}/{{ $collectionsStats['total_capacity'] }} certificati
+                        @else
+                            Nessuna collection creata
+                        @endif
+                    </span>
                 </div>
             </div>
         </div>
@@ -159,16 +196,68 @@
             <h2 class="text-lg font-semibold text-slate-800">Attività Recente</h2>
         </div>
         <div class="p-6">
-            <div class="py-12 text-center">
-                <svg class="w-12 h-12 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-slate-900">Nessuna attività</h3>
-                <p class="mt-1 text-sm text-slate-500">
-                    Inizia emettendo il primo certificato Padre Fondatore
-                </p>
-            </div>
+            @if($recentActivities->count() > 0)
+                <div class="space-y-4">
+                    @foreach($recentActivities as $activity)
+                        <div class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center w-8 h-8 rounded-full {{ $activity['color'] }}">
+                                    @if($activity['icon'] === 'folder_collection')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                    @elseif($activity['icon'] === 'certificate')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    @elseif($activity['icon'] === 'check_circle')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-slate-900">{{ $activity['title'] }}</p>
+                                    <p class="text-xs text-slate-500">{{ $activity['timestamp']->diffForHumans() }}</p>
+                                </div>
+                                <p class="text-sm text-slate-600 mt-1">{{ $activity['description'] }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($recentActivities->count() >= 10)
+                    <div class="mt-4 text-center">
+                        <a href="{{ route('founders.collections.index') }}"
+                           class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                            Vedi tutte le attività →
+                        </a>
+                    </div>
+                @endif
+            @else
+                <div class="py-12 text-center">
+                    <svg class="w-12 h-12 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-slate-900">Nessuna attività</h3>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Inizia creando la prima collection o emettendo un certificato
+                    </p>
+                    <div class="mt-4 space-x-2">
+                        <a href="{{ route('founders.collections.create') }}"
+                           class="inline-flex items-center px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-md hover:bg-emerald-200 transition-colors">
+                            Crea Collection
+                        </a>
+                        <a href="{{ route('founders.certificates.create') }}"
+                           class="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors">
+                            Emetti Certificato
+                        </a>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

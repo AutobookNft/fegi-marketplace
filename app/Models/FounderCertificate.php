@@ -28,28 +28,24 @@ class FounderCertificate extends Model
      * 🎯 Purpose: Define which fields can be mass assigned safely
      */
     protected $fillable = [
+        'collection_id',
         'index',
-        'asa_id',
-        'tx_id',
+        'certificate_title',
+        'base_price',
+        'currency',
+        'status',
+        'metadata',
         'investor_name',
         'investor_email',
-        'investor_address',
         'investor_phone',
+        'investor_address',
         'investor_wallet',
+        'asa_id',
+        'tx_id',
         'issued_at',
+        'minted_at',
         'pdf_path',
-        'artifact_ordered',
-        'artifact_ordered_at',
-        'artifact_paid',
-        'artifact_paid_at',
-        'artifact_received',
-        'artifact_received_at',
-        'artifact_shipped',
-        'artifact_shipped_at',
-        'tracking_code',
-        'token_transferred',
-        'token_transferred_at',
-        'transfer_tx_id',
+        'pdf_generated_at',
     ];
 
     /**
@@ -57,6 +53,8 @@ class FounderCertificate extends Model
      * 🎯 Purpose: Ensure proper data types for business logic
      */
     protected $casts = [
+        'base_price' => 'decimal:2',
+        'metadata' => 'array',
         'issued_at' => 'datetime',
         'artifact_ordered' => 'boolean',
         'artifact_ordered_at' => 'datetime',
@@ -79,6 +77,19 @@ class FounderCertificate extends Model
     ];
 
     // ========================================
+    // RELATIONSHIPS
+    // ========================================
+
+    /**
+     * @Oracode Relationship to Collection
+     * 🎯 Purpose: Associate certificate with its collection/event
+     */
+    public function collection()
+    {
+        return $this->belongsTo(Collection::class);
+    }
+
+    // ========================================
     // QUERY SCOPES FOR BUSINESS LOGIC
     // ========================================
 
@@ -98,7 +109,7 @@ class FounderCertificate extends Model
     public function scopeArtifactOrderedNotPaid($query)
     {
         return $query->where('artifact_ordered', true)
-                    ->where('artifact_paid', false);
+            ->where('artifact_paid', false);
     }
 
     /**
@@ -108,7 +119,7 @@ class FounderCertificate extends Model
     public function scopeReadyForShipping($query)
     {
         return $query->where('artifact_received', true)
-                    ->where('artifact_shipped', false);
+            ->where('artifact_shipped', false);
     }
 
     /**
@@ -118,7 +129,7 @@ class FounderCertificate extends Model
     public function scopeCompleted($query)
     {
         return $query->where('artifact_shipped', true)
-                    ->whereNotNull('tracking_code');
+            ->whereNotNull('tracking_code');
     }
 
     /**
@@ -128,7 +139,43 @@ class FounderCertificate extends Model
     public function scopeTokenInTreasury($query)
     {
         return $query->where('token_transferred', false)
-                    ->whereNotNull('investor_wallet');
+            ->whereNotNull('investor_wallet');
+    }
+
+    /**
+     * @Oracode Scope for draft certificates
+     * 🎯 Purpose: Find certificates not yet assigned to investors
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    /**
+     * @Oracode Scope for ready certificates
+     * 🎯 Purpose: Find certificates ready for sale
+     */
+    public function scopeReady($query)
+    {
+        return $query->where('status', 'ready');
+    }
+
+    /**
+     * @Oracode Scope for issued certificates
+     * 🎯 Purpose: Find certificates sold to investors
+     */
+    public function scopeIssued($query)
+    {
+        return $query->where('status', 'issued');
+    }
+
+    /**
+     * @Oracode Scope for minted certificates
+     * 🎯 Purpose: Find certificates with minted NFT
+     */
+    public function scopeMinted($query)
+    {
+        return $query->where('status', 'minted');
     }
 
     // ========================================
@@ -250,8 +297,52 @@ class FounderCertificate extends Model
     public function getIsCompleteAttribute(): bool
     {
         return $this->artifact_shipped &&
-               !empty($this->tracking_code) &&
-               ($this->token_transferred || empty($this->investor_wallet));
+            !empty($this->tracking_code) &&
+            ($this->token_transferred || empty($this->investor_wallet));
+    }
+
+    /**
+     * @Oracode Get status label in Italian
+     * 🎯 Purpose: Human readable status for UI
+     */
+    public function getStatusLabel(): string
+    {
+        return match ($this->status) {
+            'draft' => 'Bozza',
+            'ready' => 'Pronto',
+            'issued' => 'Venduto',
+            'minted' => 'Mintato',
+            'completed' => 'Completato',
+            default => 'Sconosciuto'
+        };
+    }
+
+    /**
+     * @Oracode Get status badge color
+     * 🎯 Purpose: Color class for status badges
+     */
+    public function getStatusBadgeColor(): string
+    {
+        return match ($this->status) {
+            'draft' => 'bg-gray-100 text-gray-800',
+            'ready' => 'bg-blue-100 text-blue-800',
+            'issued' => 'bg-green-100 text-green-800',
+            'minted' => 'bg-purple-100 text-purple-800',
+            'completed' => 'bg-emerald-100 text-emerald-800',
+            default => 'bg-gray-100 text-gray-800'
+        };
+    }
+
+    /**
+     * @Oracode Check if certificate is available for purchase
+     * 🎯 Purpose: Determine if certificate can be sold
+     */
+    public function isAvailableForPurchase(): bool
+    {
+        return $this->status === 'ready' &&
+            empty($this->investor_name) &&
+            $this->collection &&
+            $this->collection->isAvailableForPurchase();
     }
 
     // ========================================

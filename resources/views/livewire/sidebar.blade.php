@@ -1,14 +1,17 @@
 <div class="drawer-side">
     <!-- drawer-overlay gestisce il click fuori dalla sidebar per chiuderla su mobile -->
     <label for="main-drawer" class="drawer-overlay"></label>
-    <aside class="flex flex-col min-h-screen bg-neutral text-neutral-content w-80">
+    <aside class="flex min-h-screen w-80 flex-col bg-neutral text-neutral-content">
         <!-- Titolo del Contesto -->
-        <div class="p-6 text-2xl font-semibold border-b border-neutral-focus">
-            {{ __($contextTitle) }}
+        <div class="border-neutral-focus border-b">
+            <a href="{{ route('founders.dashboard') }}"
+                class="hover:bg-neutral-focus block p-6 text-2xl font-semibold transition-colors duration-150 ease-in-out">
+                {{ __($contextTitle) }}
+            </a>
         </div>
 
         <!-- Menu OS1 Enhanced with Modal Support -->
-        <div class="flex-1 px-4 py-2 space-y-3 overflow-y-auto">
+        <div class="flex-1 space-y-3 overflow-y-auto px-4 py-2">
             @if (!empty($menus))
                 @foreach ($menus as $key => $menu)
                     @if (empty($menu['permission']) || \Illuminate\Support\Facades\Gate::allows($menu['permission']))
@@ -32,11 +35,11 @@
 
                         @if (!empty($menu['items']))
                             <!-- Summary con sottomenù -->
-                            <details class="bg-transparent collapse-arrow group collapse"
+                            <details class="group collapse collapse-arrow bg-transparent"
                                 @if ($isGroupActive) open @endif>
                                 <summary
-                                    class="{{ $isGroupActive ? 'bg-primary text-primary-content shadow-sm rounded-md' : 'hover:bg-base-content hover:bg-opacity-10 rounded-md' }} focus-visible:ring-primary cursor-pointer list-none transition-colors duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2">
-                                    <div class="flex items-center gap-3 px-3 py-3 text-base font-medium collapse-title">
+                                    class="{{ $isGroupActive ? 'bg-primary text-primary-content shadow-sm rounded-md' : 'hover:bg-base-content hover:bg-opacity-10 rounded-md' }} cursor-pointer list-none transition-colors duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                                    <div class="collapse-title flex items-center gap-3 px-3 py-3 text-base font-medium">
                                         @if (!empty($menu['icon']))
                                             <span
                                                 class="{{ $isGroupActive ? '' : 'opacity-60 group-hover:opacity-100 transition-opacity' }} flex-shrink-0">
@@ -48,7 +51,7 @@
                                 </summary>
 
                                 <!-- OS1 Enhanced Submenu Content -->
-                                <div class="pt-2 pb-1 pl-6 pr-2 space-y-1 collapse-content">
+                                <div class="collapse-content space-y-1 pb-1 pl-6 pr-2 pt-2">
                                     @foreach ($menu['items'] as $item)
                                         @if (empty($item['permission']) || \Illuminate\Support\Facades\Gate::allows($item['permission']))
                                             @php
@@ -63,14 +66,14 @@
                                                     @if (isset($item['html_attributes'])) @foreach ($item['html_attributes'] as $attr => $value)
                                                                {{ $attr }}="{{ $value }}"
                                                            @endforeach @endif
-                                                    class="hover:bg-base-content focus-visible:ring-primary flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors duration-150 ease-in-out hover:bg-opacity-10 focus-visible:outline-none focus-visible:ring-2">
+                                                    class="flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors duration-150 ease-in-out hover:bg-base-content hover:bg-opacity-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                                                     @if (!empty($item['icon']))
                                                         <span
-                                                            class="flex-shrink-0 transition-opacity opacity-60 group-hover:opacity-100">
+                                                            class="flex-shrink-0 opacity-60 transition-opacity group-hover:opacity-100">
                                                             {!! $item['icon'] !!}
                                                         </span>
                                                     @else
-                                                        <span class="w-5 h-5"></span>
+                                                        <span class="h-5 w-5"></span>
                                                     @endif
                                                     <span class="flex-grow truncate">{{ $item['name'] }}</span>
                                                     <!-- OS1 Visual Indicator for Modal Actions -->
@@ -88,7 +91,7 @@
                                                             {!! $item['icon'] !!}
                                                         </span>
                                                     @else
-                                                        <span class="w-5 h-5"></span>
+                                                        <span class="h-5 w-5"></span>
                                                     @endif
                                                     <span class="flex-grow truncate">{{ $item['name'] }}</span>
                                                 </a>
@@ -105,10 +108,10 @@
                                     @if (isset($menu['html_attributes'])) @foreach ($menu['html_attributes'] as $attr => $value)
                                                {{ $attr }}="{{ $value }}"
                                            @endforeach @endif
-                                    class="flex items-center w-full gap-3 px-3 py-3 text-base font-medium text-left list-none transition-colors duration-150 ease-in-out rounded-md hover:bg-base-content focus-visible:ring-primary hover:bg-opacity-10 focus-visible:outline-none focus-visible:ring-2">
+                                    class="flex w-full list-none items-center gap-3 rounded-md px-3 py-3 text-left text-base font-medium transition-colors duration-150 ease-in-out hover:bg-base-content hover:bg-opacity-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                                     @if (!empty($menu['icon']))
                                         <span
-                                            class="flex-shrink-0 transition-opacity opacity-60 group-hover:opacity-100">
+                                            class="flex-shrink-0 opacity-60 transition-opacity group-hover:opacity-100">
                                             {!! $menu['icon'] !!}
                                         </span>
                                     @endif
@@ -133,7 +136,7 @@
                         @endif
 
                         @if (!$loop->last)
-                            <div class="my-2 border-t border-neutral-focus/20"></div>
+                            <div class="border-neutral-focus/20 my-2 border-t"></div>
                         @endif
                     @endif
                 @endforeach
